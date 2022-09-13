@@ -1,0 +1,2 @@
+This is supposed to become a library of chess routines written in nim.
+Ideas of use cases: engine, client, server, database, tablebase, trainer.
