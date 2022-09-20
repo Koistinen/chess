@@ -1,3 +1,4 @@
+# Copyright 2022 Urban Koistinen - GNU Affero
 type Square* = range[0..63]
 proc square*(rank, file: int):Square = rank*8+file
 proc rank*(sq: Square):int=sq shr 3
@@ -16,7 +17,19 @@ proc `$`* (bb: Bitboard): string =
         result.add('-')
       else:
         result.add('+')
-        
-echo bitboard(square(0,1)) or bitboard(square(2,2))
-echo square(0,1)
-echo square(2,2)
+
+type Position* = object # 8*8 bytes
+  white, black, pawn, knight, bishop, rook, queen: Bitboard
+  game50: uint32 # least significant bit is side to move
+  king: array[0..1, uint8]
+  ep: uint8
+  castling: uint8
+
+type Move* = object
+  fr: uint8 # 64..127 promotion, 128..191 ep, 192..256 castling
+  to: uint8 # high 2 bits say promotion piece in case of promotion
+
+when isMainModule:
+  echo bitboard(square(0,1)) or bitboard(square(2,2))
+  echo square(0,1)
+  echo square(2,2)
