@@ -19,8 +19,10 @@ proc `$`* (bb: Bitboard): string =
         result.add('+')
 
 type Position* = object # 8*8 bytes
-  white, black, pawn, knight, bishop, rook, queen: Bitboard
-  game50: uint32 # least significant bit is side to move
+  side: array[0..1, Bitboard]
+  pawn, knight, bishop, rook, queen: Bitboard
+  game50: uint16
+  halfmoves: uint16
   king: array[0..1, uint8]
   ep: uint8
   castling: uint8
