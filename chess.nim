@@ -1,4 +1,6 @@
 # Copyright 2022 Urban Koistinen - GNU Affero
+import strutils
+
 type Square* = range[0..63]
 proc square*(rank, file: int):Square = rank*8+file
 proc rank*(sq: Square):int=sq shr 3
@@ -7,8 +9,8 @@ proc `$`* (sq: Square):string =
   result.add("abcdefgh"[sq.file])
   result.add("12345678"[sq.rank])
 
-type Bitboard* = int64
-proc bitboard* (sq: Square):Bitboard = 1 shl sq
+type Bitboard* = uint64
+proc bitboard* (sq: Square):Bitboard = 1u shl sq
 proc `$`* (bb: Bitboard): string =
   for rank in countdown(7,0):
     if rank<7: result.add('\n')
@@ -19,13 +21,27 @@ proc `$`* (bb: Bitboard): string =
         result.add('+')
 
 type Position* = object # 8*8 bytes
-  side: array[0..1, Bitboard]
-  pawn, knight, bishop, rook, queen: Bitboard
+  so: array[0..1, Bitboard]
+  pawns, knights, bishops, rooks, queens: Bitboard
   game50: uint16
   halfmoves: uint16
-  king: array[0..1, uint8]
+  kings: array[0..1, uint8]
   ep: uint8
   castling: uint8
+
+proc addPiece(p: Position, piece: char, sq: Square): Position =
+  var bb: Bitboard = bitboard(sq)
+  var side: int = if isLowerAscii(piece): 1 else: 0
+  result = p
+  result.so[side] = p.so[side] or bb
+  case piece.toLowerAscii
+  of 'p': result.pawns = p.pawns or bb
+  of 'n': result.knights = p.knights or bb
+  of 'b': result.bishops = p.bishops or bb
+  of 'r': result.rooks = p.rooks or bb
+  of 'q': result.queens = p.queens or bb
+  of 'k': result.kings[side] = sq.uint8
+  else: assert false
 
 type Move* = object
   fr: uint8 # 64..127 promotion, 128..191 ep, 192..256 castling
