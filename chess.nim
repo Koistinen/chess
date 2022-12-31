@@ -29,7 +29,7 @@ type Position* = object # 8*8 bytes
   ep: uint8
   castling: uint8
 
-proc addPiece(p: Position, piece: char, sq: Square): Position =
+proc addPiece*(p: Position, piece: char, sq: Square): Position =
   var bb: Bitboard = bitboard(sq)
   var side: int = if isLowerAscii(piece): 1 else: 0
   result = p
@@ -47,7 +47,15 @@ type Move* = object
   fr: uint8 # 64..127 promotion, 128..191 ep, 192..256 castling
   to: uint8 # high 2 bits say promotion piece in case of promotion
 
+proc isPromotion(mv: Move):bool = 64 <= mv.fr and mv.fr <= 127
+
+  
 when isMainModule:
   echo bitboard(square(0,1)) or bitboard(square(2,2))
   echo square(0,1)
   echo square(2,2)
+  var mv: Move
+  mv.fr = 12
+  mv.to = 28
+  echo isPromotion(mv)
+  
