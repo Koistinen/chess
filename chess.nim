@@ -73,7 +73,7 @@ proc fen(s: string): Position =
       dec rank
       file = 0
       assert rank >= 0
-    of '1'..'7':
+    of '1'..'8':
       inc(file, c.ord - '0'.ord)
     of 'k','K','q','Q','r','R','b','B','n','N','p','P':
       result = result.addPiece(c, square(file, rank))
@@ -99,9 +99,9 @@ when isMainModule:
   mv.to = 28
   echo isPromotion(mv)
   var p = startingPosition()
-  echo "black pieces:"
-  echo p.so[0]
   echo "white pieces:"
+  echo p.so[0]
+  echo "black pieces:"
   echo p.so[1]
   echo "pawns:"
   echo p.pawns
@@ -116,3 +116,21 @@ when isMainModule:
   echo "knights:"
   echo p.knights
   echo "kings: ", p.kings[0].Square, ", ", p.kings[1].Square
+  p = fen("8/p7/1P6/1r3p1k/7P/3R1KP1/8/8") # b - - 0 0
+  echo "8/p7/1P6/1r3p1k/7P/3R1KP1/8/8 b - - 0 0"
+  echo "white pieces:"
+  echo p.so[0]
+  echo "black pieces:"
+  echo p.so[1]
+  echo "pawns:"
+  echo p.pawns
+  echo "queens:"
+  echo p.queens
+  echo "rooks:"
+  echo p.rooks
+  echo "bishops:"
+  echo p.bishops
+  echo "bishops:"
+  echo p.bishops
+  echo "knights:"
+  echo p.knights
