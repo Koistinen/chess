@@ -29,6 +29,34 @@ type Position* = object # 8*8 bytes
   ep: uint8
   castling: uint8
 
+proc `$`*(p: Position): string =
+  var oc: Bitboard = p.so[0] or p.so[1]
+  for rank in countdown(7,0):
+    for file in countup(0,7):
+      var sq: Bitboard = bitboard(square(file, rank))
+      if 0 == (oc and sq):
+        result.add(if 1 == (1 and (rank+file)): '-' else: ' ')
+      else:
+        var pieceChar: char = 'k'
+        if sq == (sq and p.knights): pieceChar = 'n'
+        elif sq == (sq and p.bishops): pieceChar = 'b'
+        elif sq == (sq and p.rooks): pieceChar = 'r'
+        elif sq == (sq and p.queens): pieceChar = 'q'
+        elif sq == (sq and p.pawns): pieceChar = 'p'
+        if sq == (sq and p.so[0]):
+          pieceChar = (pieceChar.int - ' '.int).char
+        result.add(pieceChar)
+    result.add('\n')
+  result.add("game50: ")
+#  result.add($p.game50)
+  result.add(" halfmoves: ")
+#  result.add($p.halfmoves)
+  result.add(" epsquare: ")
+  if 0 < p.ep: result.add($p.ep.Square)
+  else: result.add("no")
+  result.add(" castling: ")
+#  result.add($p.castling)
+
 proc emptyPosition: Position =
   result.so[0] = 0
   result.so[1] = 0
@@ -42,7 +70,7 @@ proc emptyPosition: Position =
   result.kings[0] = 64 # missing white king is illegal position
   result.kings[1] = 64 # missing black king is illegal position
   result.ep = 0
-  result.castling = 0
+  result.castling = 0xf
   
 proc addPiece*(p: Position, piece: char, sq: Square): Position =
   result = p
@@ -134,3 +162,4 @@ when isMainModule:
   echo p.bishops
   echo "knights:"
   echo p.knights
+  echo p
