@@ -3,15 +3,15 @@ import strutils
 
 type Square* = range[0..63]
 proc square*(file, rank: int):Square = rank*8+file
-proc rank*(sq: Square):int=sq shr 3
-proc file*(sq: Square):int=sq and 7
-proc `$`* (sq: Square):string =
+proc rank*(sq: Square):int=sq.int shr 3
+proc file*(sq: Square):int=sq.int and 7
+proc square2string* (sq: Square):string =
   result.add("abcdefgh"[sq.file])
   result.add("12345678"[sq.rank])
 
 type Bitboard* = uint64
-proc bitboard* (sq: Square):Bitboard = 1u shl sq
-proc `$`* (bb: Bitboard): string =
+proc bitboard* (sq: Square):Bitboard = 1u64 shl sq
+proc bitboard2string* (bb: Bitboard): string =
   for rank in countdown(7,0):
     if rank<7: result.add('\n')
     for file in countup(0,7):
@@ -48,11 +48,11 @@ proc `$`*(p: Position): string =
         result.add(pieceChar)
     result.add('\n')
   result.add("game50: ")
-#  result.add($p.game50)
+  result.add($p.game50)
   result.add(" halfmoves: ")
-#  result.add($p.halfmoves)
+  result.add($p.halfmoves)
   result.add(" epsquare: ")
-  if 0 < p.ep: result.add($p.ep.Square)
+  if 0 < p.ep: result.add(p.ep.Square.square2string)
   else: result.add("no")
   result.add(" castling: ")
 #  result.add($p.castling)
@@ -119,7 +119,7 @@ proc isPromotion(mv: Move):bool = 64 <= mv.fr and mv.fr <= 127
 
   
 when isMainModule:
-  echo bitboard(square(0,1)) or bitboard(square(2,2))
+  echo (bitboard(square(0,1)) or bitboard(square(2,2))).bitboard2string
   echo square(0,1)
   echo square(2,2)
   var mv: Move
@@ -127,39 +127,7 @@ when isMainModule:
   mv.to = 28
   echo isPromotion(mv)
   var p = startingPosition()
-  echo "white pieces:"
-  echo p.so[0]
-  echo "black pieces:"
-  echo p.so[1]
-  echo "pawns:"
-  echo p.pawns
-  echo "queens:"
-  echo p.queens
-  echo "rooks:"
-  echo p.rooks
-  echo "bishops:"
-  echo p.bishops
-  echo "bishops:"
-  echo p.bishops
-  echo "knights:"
-  echo p.knights
-  echo "kings: ", p.kings[0].Square, ", ", p.kings[1].Square
+  echo p
   p = fen("8/p7/1P6/1r3p1k/7P/3R1KP1/8/8") # b - - 0 0
   echo "8/p7/1P6/1r3p1k/7P/3R1KP1/8/8 b - - 0 0"
-  echo "white pieces:"
-  echo p.so[0]
-  echo "black pieces:"
-  echo p.so[1]
-  echo "pawns:"
-  echo p.pawns
-  echo "queens:"
-  echo p.queens
-  echo "rooks:"
-  echo p.rooks
-  echo "bishops:"
-  echo p.bishops
-  echo "bishops:"
-  echo p.bishops
-  echo "knights:"
-  echo p.knights
   echo p
