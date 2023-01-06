@@ -5,17 +5,17 @@ type Square* = range[0..63]
 proc square*(file, rank: int):Square = rank*8+file
 proc rank*(sq: Square):int=sq.int shr 3
 proc file*(sq: Square):int=sq.int and 7
-proc square2string* (sq: Square):string =
+proc sq2str* (sq: Square):string =
   result.add("abcdefgh"[sq.file])
   result.add("12345678"[sq.rank])
 
 type Bitboard* = uint64
 proc bitboard* (sq: Square):Bitboard = 1u64 shl sq
-proc bitboard2string* (bb: Bitboard): string =
+proc bb2str* (bb: Bitboard): string =
   for rank in countdown(7,0):
     if rank<7: result.add('\n')
     for file in countup(0,7):
-      if 0 == (bb and bitboard(square(file, rank))):
+      if 0 == (bb.Bitboard and bitboard(square(file, rank))):
         result.add('-')
       else:
         result.add('+')
@@ -52,10 +52,10 @@ proc `$`*(p: Position): string =
   result.add(" halfmoves: ")
   result.add($p.halfmoves)
   result.add(" epsquare: ")
-  if 0 < p.ep: result.add(p.ep.Square.square2string)
+  if 0 < p.ep: result.add(p.ep.sq2str)
   else: result.add("no")
   result.add(" castling: ")
-#  result.add($p.castling)
+  result.add(p.castling.BiggestInt.toBin(4))
 
 proc emptyPosition: Position =
   result.so[0] = 0
@@ -91,10 +91,10 @@ proc addPiece*(p: Position, piece: char, sq: Square): Position =
 
 proc fen(s: string): Position =
   result = emptyPosition()
-  var board: string = s
+  var fenArgs: string = s
   var rank: int = 7
   var file: int = 0
-  for c in board:
+  for c in fenArgs[0]:
     assert file < 8 or c == '/'
     case c
     of '/':
@@ -107,6 +107,7 @@ proc fen(s: string): Position =
       result = result.addPiece(c, square(file, rank))
       inc file
     else: assert false
+    
 
 proc startingPosition: Position =
   fen("rnbqkbnr/pppppppp/////PPPPPPPP/RNBQKBNR")
@@ -119,9 +120,9 @@ proc isPromotion(mv: Move):bool = 64 <= mv.fr and mv.fr <= 127
 
   
 when isMainModule:
-  echo (bitboard(square(0,1)) or bitboard(square(2,2))).bitboard2string
-  echo square(0,1)
-  echo square(2,2)
+  echo (bitboard(square(0,1)) or bitboard(square(2,2))).bb2str
+  echo square(0,1).sq2str
+  echo square(2,2).sq2str
   var mv: Move
   mv.fr = 12
   mv.to = 28
