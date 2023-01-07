@@ -162,25 +162,82 @@ proc fen2p(s: string): Position =
   result.halfmoves = result.halfmoves + 2*a[5].parseInt.uint16
 
 proc startingPosition: Position =
-  fen2p("rnbqkbnr/pppppppp/////PPPPPPPP/RNBQKBNR w KQkq - 0 0")
+  fen2p("rnbqkbnr/pppppppp/////PPPPPPPP/RNBQKBNR w KQkq - 0 1")
 
 type Move* = object
   fr: uint8 # 64..127 promotion, 128..191 ep, 192..256 castling
   to: uint8 # high 2 bits say promotion piece in case of promotion
 
-proc isPromotion(mv: Move):bool = 64 <= mv.fr and mv.fr <= 127
+proc makemove*(p: Position, mv: Move): Position =
+  result = p
+  result.game50.inc
+  result.halfmoves.inc
+  let fr: Square = 0o77 and mv.fr
+  let to: Square = 0o77 and mv.to
+  result.ep = 0
+  if bb(to) == (bb(to) and p.so[result.side]):
+    result.so[result.side] = p.so[result.side] xor bb(to)
+    if bb(to) == (bb(to) and p.pawns): result.pawns = result.pawns xor bb(to)
+    elif bb(to) == p.knights: result.knights = result.knights xor bb(to)
+    elif bb(to) == p.bishops: result.bishops = result.bishops xor bb(to)
+    elif bb(to) == p.rooks: result.rooks = result.rooks xor bb(to)
+    else: result.queens = result.queens xor bb(to)
+  result.so[p.side] = result.so[p.side] xor bb(fr) xor bb(to)
+  case 0xc0u and mv.fr
+  of 0:
+    if bb(fr) == (bb(fr) and p.pawns):
+      result.pawns = (result.pawns xor bb(fr)) or bb(to)
+      if 0u == (0o10u and (fr xor to).uint): result.ep = ((fr+to) div 2).uint8
+    elif bb(fr) == (bb(fr) and p.knights):
+      result.knights = (result.knights xor bb(fr)) or bb(to)
+    elif bb(fr) == (bb(fr) and p.bishops):
+      result.bishops = (result.bishops xor bb(fr)) or bb(to)
+    elif bb(fr) == (bb(fr) and p.rooks):
+      result.rooks = (result.rooks xor bb(fr)) or bb(to)
+      if 0 == p.side:
+        if to == square(0,0): result.castling = result.castling and 0b1011
+        elif to == square(7,0): result.castling = result.castling and 0b0111
+      else:
+        if to == square(0,7): result.castling = result.castling and 0b1110
+        elif to == square(7,7): result.castling = result.castling and 0b1101
+    elif bb(fr) == (bb(fr) and p.queens):
+      result.queens = (result.queens xor bb(fr)) or bb(to)
+    else:
+      result.kings[p.side] = to.uint8
+      result.castling = result.castling and (3 shl (2*p.side)).uint8
+  of 0x40u:
+    result.pawns = result.pawns xor bb(fr)
+    case 0xc0 and mv.to
+    of 0x00: result.knights = result.knights xor bb(to)
+    of 0x40: result.bishops = result.bishops xor bb(to)
+    of 0x80: result.rooks = result.rooks xor bb(to)
+    of 0xc0: result.queens = result.queens xor bb(to)
+    else: assert false
+  of 0x80u:
+    result.so[result.side] = p.so[result.side] xor bb((7 and to)+(0o70 and fr))
+    result.pawns = result.pawns xor bb((7 and to)+(0o70 and fr))
+  of 0xc0u:
+    result.kings[p.side] = to.uint8
+    if 0 == (to and 4):
+      result.so[p.side] = result.so[p.side] xor bb(to-2) xor bb(to+1)
+      result.rooks = result.rooks xor bb(to-2) xor bb(to+1)
+    else:
+      result.so[p.side] = result.so[p.side] xor bb(to+1) xor bb(to-1)
+      result.rooks = result.rooks xor bb(to+1) xor bb(to-1)
+  else:
+    assert false
 
 when isMainModule:
   echo (bb(square(0,1)) or bb(square(2,2))).bb2str
   echo square(0,1).sq2str
   echo square(2,2).sq2str
   var mv: Move
-  mv.fr = 12
-  mv.to = 28
-  echo isPromotion(mv)
+  mv.fr = "e2".str2sq.uint8
+  mv.to = "e4".str2sq.uint8
   var p = startingPosition()
   echo p
   echo p.p2fen
+  echo p.makemove(mv)
   p = fen2p("8/p7/1P6/1r3p1k/7P/3R1KP1/8/8 b - - 0 0")
   echo "8/p7/1P6/1r3p1k/7P/3R1KP1/8/8 b - - 0 0"
   echo p
