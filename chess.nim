@@ -58,15 +58,7 @@ proc `$`*(p: Position): string =
       if 0 == (oc and sq):
         result.add(if 1 == (1 and (rank+file)): '-' else: ' ')
       else:
-        var pieceChar: char = 'k'
-        if sq == (sq and p.knights): pieceChar = 'n'
-        elif sq == (sq and p.bishops): pieceChar = 'b'
-        elif sq == (sq and p.rooks): pieceChar = 'r'
-        elif sq == (sq and p.queens): pieceChar = 'q'
-        elif sq == (sq and p.pawns): pieceChar = 'p'
-        if sq == (sq and p.so[0]):
-          pieceChar = (pieceChar.int - ' '.int).char
-        result.add(pieceChar)
+        result.add(p.pieceChar(square(file,rank)))
     result.add('\n')
   result.add("game50: ")
   result.add($p.game50)
