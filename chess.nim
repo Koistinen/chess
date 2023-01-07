@@ -21,7 +21,7 @@ proc bb2str* (b: Bb): string =
       else:
         result.add('+')
 
-type Position* = object # 8*8 bytes
+type Position* = object # 64 bytes
   so: array[0..1, BB]
   pawns, knights, bishops, rooks, queens: BB
   game50: uint16
@@ -30,12 +30,26 @@ type Position* = object # 8*8 bytes
   ep: uint8
   castling: uint8
 
-proc castling2string(castling: uint8): string =
-  if 0 == castling: result = "-"
+proc oc(p: Position): BB = p.so[0] or p.so[1]
+  
+proc side*(p: Position): uint = 1 and p.halfmoves
+  
+proc castlingString(p: Position): string =
+  if 0 == p.castling: result = "-"
   for i in countup(0,3):
-    if 0 < (castling and (8u shr i)):
+    if 0 < (p.castling and (8u shr i)):
       result.add("KQkq"[i])
-
+proc pieceChar(p: Position, sq: Square): char =
+  result = 'k'
+  let b = sq.bb
+  if b == (b and p.knights): result = 'n'
+  elif b == (b and p.bishops): result = 'b'
+  elif b == (b and p.rooks): result = 'r'
+  elif b == (b and p.queens): result = 'q'
+  elif b == (b and p.pawns): result = 'p'
+  if b == (b and p.so[0]):
+    result = (result.ord - ' '.ord).char
+      
 proc `$`*(p: Position): string =
   var oc: BB = p.so[0] or p.so[1]
   for rank in countdown(7,0):
@@ -62,7 +76,7 @@ proc `$`*(p: Position): string =
   if 0 < p.ep: result.add(p.ep.sq2str)
   else: result.add("-")
   result.add(" castling: ")
-  result.add(castling2string(p.castling))
+  result.add(p.castlingString)
 
 proc emptyPosition: Position =
   result.so[0] = 0
@@ -94,6 +108,31 @@ proc addPiece*(p: Position, piece: char, sq: Square): Position =
     assert result.kings[side] == 64 # no previous king
     result.kings[side] = sq.uint8
   else: assert false
+  
+proc p2fen(p: Position): string =
+  for rank in countdown(7,0):
+    var empty = 0
+    for file in countup(0,7):
+      if 0 == (square(file,rank).bb and p.oc):
+        empty.inc
+      else:
+        if empty > 0: result.add($empty)
+        empty = 0
+        result.add(p.pieceChar(square(file,rank)))
+    if empty > 0: result.add($empty)
+    if 0 < rank:
+      result.add('/')
+  result.add(' ')
+  result.add("wb"[p.side])
+  result.add(' ')
+  result.add(p.castlingString)
+  result.add(' ')
+  if 0 == p.ep: result.add('-')
+  else: result.add(p.ep.sq2str)
+  result.add(' ')
+  result.add($p.game50)
+  result.add(' ')
+  result.add($(p.halfmoves div 2))
 
 proc fen2p(s: string): Position =
   result = emptyPosition()
@@ -110,7 +149,7 @@ proc fen2p(s: string): Position =
     of '1'..'8':
       inc(file, c.ord - '0'.ord)
     of 'k','K','q','Q','r','R','b','B','n','N','p','P':
-      result = result.addPiece(c, square(file, rank))
+      result = result.addPiece(c, square(file,rank))
       inc file
     else: assert false
   if a[1] == "b":
@@ -119,16 +158,11 @@ proc fen2p(s: string): Position =
     assert "w" == a[1]
   for c in a[2]:
     case c
-    of '-':
-      result.castling = 0
-    of 'K':
-      result.castling = 8 or result.castling
-    of 'Q':
-      result.castling = 4 or result.castling
-    of 'k':
-      result.castling = 2 or result.castling
-    of 'q':
-      result.castling = 1 or result.castling
+    of '-': result.castling = 0
+    of 'K': result.castling = 8 or result.castling
+    of 'Q': result.castling = 4 or result.castling
+    of 'k': result.castling = 2 or result.castling
+    of 'q': result.castling = 1 or result.castling
     else: assert false
   if "-" == a[3]: result.ep = 0
   else: result.ep = str2sq(a[3]).uint8
@@ -154,6 +188,8 @@ when isMainModule:
   echo isPromotion(mv)
   var p = startingPosition()
   echo p
+  echo p.p2fen
   p = fen2p("8/p7/1P6/1r3p1k/7P/3R1KP1/8/8 b - - 0 0")
   echo "8/p7/1P6/1r3p1k/7P/3R1KP1/8/8 b - - 0 0"
   echo p
+  echo p.p2fen
