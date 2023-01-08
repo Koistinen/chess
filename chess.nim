@@ -31,7 +31,7 @@ type Position* = object # 64 bytes
   castling: uint8
 
 proc oc(p: Position): BB = p.so[0] or p.so[1]
-  
+
 proc side*(p: Position): uint = 1 and p.halfmoves
   
 proc castlingString(p: Position): string =
@@ -168,6 +168,24 @@ type Move* = object
   fr: uint8 # 64..127 promotion, 128..191 ep, 192..256 castling
   to: uint8 # high 2 bits say promotion piece in case of promotion
 
+proc `$`*(mv: Move): string =
+  let fr: Square = 0o77 and mv.fr
+  let to: Square = 0o77 and mv.to
+  if mv.fr >= 192:
+    if to == fr+2: result.add("O-O")
+    else: result.add("O-O-O")
+  else:
+    result.add(fr.sq2str)
+    result.add(to.sq2str)
+    if mv.fr in 64u..127u:
+      case 0xc0 and mv.to
+      of 0x00: result.add('N')
+      of 0x40: result.add('B')
+      of 0x80: result.add('R')
+      of 0xc0: result.add('Q')
+      else: assert false
+    elif mv.fr in 128u..191u: result.add(" e.p.")
+
 proc makemove*(p: Position, mv: Move): Position =
   result = p
   result.game50.inc
@@ -228,12 +246,10 @@ proc makemove*(p: Position, mv: Move): Position =
     assert false
 
 when isMainModule:
-  echo (bb(square(0,1)) or bb(square(2,2))).bb2str
-  echo square(0,1).sq2str
-  echo square(2,2).sq2str
   var mv: Move
   mv.fr = "e2".str2sq.uint8
   mv.to = "e4".str2sq.uint8
+  echo "Move: ", mv
   var p = startingPosition()
   echo p
   echo p.p2fen
