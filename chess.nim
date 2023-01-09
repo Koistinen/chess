@@ -1,5 +1,6 @@
 # Copyright 2022 Urban Koistinen - GNU Affero
 import strutils
+import std/bitops
 
 type Square* = range[0..63]
 proc square*(file, rank: int):Square = rank*8+file
@@ -168,6 +169,10 @@ type Move* = object
   fr: uint8 # 64..127 promotion, 128..191 ep, 192..256 castling
   to: uint8 # high 2 bits say promotion piece in case of promotion
 
+proc move(fr, to: Square): Move =
+  result.fr = fr.uint8
+  result.to = to.uint8
+
 proc `$`*(mv: Move): string =
   let fr: Square = 0o77 and mv.fr
   let to: Square = 0o77 and mv.to
@@ -185,7 +190,32 @@ proc `$`*(mv: Move): string =
       of 0xc0: result.add('Q')
       else: assert false
     elif mv.fr in 128u..191u: result.add(" e.p.")
-
+    
+proc genmoves(p: Position): seq[Move] =
+  const
+    cwest1 = 0x7f7f7f7f7f7f7f7fu
+    ceast1 = 0xfefefefefefefefeu
+    cwest2 = 0x3f3f3f3f3f3f3f3fu
+    ceast2 = 0xfcfcfcfcfcfcfcfcu
+    cnorth1 = 0x00ffffffffffffffu # unneeded?
+    csouth1 = 0xffffffffffffff00u # unneeded?
+    cnorth2 = 0x0000ffffffffffffu # unneeded?
+    csouth2 = 0xffffffffffff0000u # unneeded?
+  var b = p.so[p.side] and p.knights
+  while 0u < b:
+    let fr = b.countTrailingZeroBits
+    b.clearbit(fr)
+    let f = bb(fr)
+    let f1 = ((f and cwest1) shl 1) or ((f and ceast1) shr 1)
+    let f2 = ((f and cwest2) shl 2) or ((f and ceast2) shr 2)
+    let t1 = ((f2 and cnorth1) shl 8) or ((f2 and csouth1) shr 8)
+    let t2 = ((f1 and cnorth2) shl 16) or ((f1 and csouth2) shr 16)
+    var t = (t1 or t2) and not p.so[p.side]
+    while 0u < t:
+      let to = t.countTrailingZeroBits
+      t.clearbit(to)
+      result.add(move(fr,to))
+    
 proc makemove*(p: Position, mv: Move): Position =
   result = p
   result.game50.inc
@@ -253,7 +283,15 @@ when isMainModule:
   var p = startingPosition()
   echo p
   echo p.p2fen
+  var moveSeq = p.genmoves
+  echo "Generated moves:"
+  for mv in moveSeq:
+    echo mv
   echo p.makemove(mv)
+  moveSeq = p.makemove(mv).genmoves
+  echo "Generated moves:"
+  for mv in moveSeq:
+    echo mv
   p = fen2p("8/p7/1P6/1r3p1k/7P/3R1KP1/8/8 b - - 0 0")
   echo "8/p7/1P6/1r3p1k/7P/3R1KP1/8/8 b - - 0 0"
   echo p
