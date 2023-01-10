@@ -215,6 +215,9 @@ proc genmoves(p: Position): seq[Move] =
       let to = t.countTrailingZeroBits
       t.clearbit(to)
       result.add(move(fr,to))
+  let fr = p.kings[p.side]
+  if 0u < (bb(fr) and cnorth1 and not (p.so[p.side] shr 8)):
+    result.add(move(fr,fr+8))
     
 proc makemove*(p: Position, mv: Move): Position =
   result = p
@@ -287,11 +290,22 @@ when isMainModule:
   echo "Generated moves:"
   for mv in moveSeq:
     echo mv
-  echo p.makemove(mv)
-  moveSeq = p.makemove(mv).genmoves
+  p = p.makemove(mv)
+  echo p
+  moveSeq = p.genmoves
   echo "Generated moves:"
   for mv in moveSeq:
     echo mv
+  mv = moveSeq[0]
+  echo mv
+  p = p.makemove(mv)
+  echo p
+  moveSeq = p.genmoves
+  echo "Generated moves:"
+  for mv in moveSeq:
+    echo mv
+  mv = moveSeq[0]
+  
   p = fen2p("8/p7/1P6/1r3p1k/7P/3R1KP1/8/8 b - - 0 0")
   echo "8/p7/1P6/1r3p1k/7P/3R1KP1/8/8 b - - 0 0"
   echo p
