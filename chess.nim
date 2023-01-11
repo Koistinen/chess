@@ -193,10 +193,10 @@ proc `$`*(mv: Move): string =
     
 proc genmoves(p: Position): seq[Move] =
   const
-    cwest1 = 0x7f7f7f7f7f7f7f7fu
-    ceast1 = 0xfefefefefefefefeu
-    cwest2 = 0x3f3f3f3f3f3f3f3fu
-    ceast2 = 0xfcfcfcfcfcfcfcfcu
+    ceast1 = 0x7f7f7f7f7f7f7f7fu
+    cwest1 = 0xfefefefefefefefeu
+    ceast2 = 0x3f3f3f3f3f3f3f3fu
+    cwest2 = 0xfcfcfcfcfcfcfcfcu
     cnorth1 = 0x00ffffffffffffffu # unneeded?
     csouth1 = 0xffffffffffffff00u # unneeded?
     cnorth2 = 0x0000ffffffffffffu # unneeded?
@@ -206,8 +206,8 @@ proc genmoves(p: Position): seq[Move] =
     let fr = b.countTrailingZeroBits
     b.clearbit(fr)
     let f = bb(fr)
-    let f1 = ((f and cwest1) shl 1) or ((f and ceast1) shr 1)
-    let f2 = ((f and cwest2) shl 2) or ((f and ceast2) shr 2)
+    let f1 = ((f and cwest1) shr 1) or ((f and ceast1) shl 1)
+    let f2 = ((f and cwest2) shr 2) or ((f and ceast2) shl 2)
     let t1 = ((f2 and cnorth1) shl 8) or ((f2 and csouth1) shr 8)
     let t2 = ((f1 and cnorth2) shl 16) or ((f1 and csouth2) shr 16)
     var t = (t1 or t2) and not p.so[p.side]
@@ -216,8 +216,22 @@ proc genmoves(p: Position): seq[Move] =
       t.clearbit(to)
       result.add(move(fr,to))
   let fr = p.kings[p.side]
+  if 0u < (bb(fr) and cnorth1 and cwest1 and not (p.so[p.side] shr 7)):
+    result.add(move(fr,fr+7))
   if 0u < (bb(fr) and cnorth1 and not (p.so[p.side] shr 8)):
     result.add(move(fr,fr+8))
+  if 0u < (bb(fr) and cnorth1 and ceast1 and not (p.so[p.side] shr 9)):
+    result.add(move(fr,fr+9))
+  if 0u < (bb(fr) and ceast1 and not (p.so[p.side] shr 1)):
+    result.add(move(fr,fr+1))
+  if 0u < (bb(fr) and csouth1 and ceast1 and not (p.so[p.side] shl 7)):
+    result.add(move(fr,fr-7))
+  if 0u < (bb(fr) and csouth1 and not (p.so[p.side] shl 8)):
+    result.add(move(fr,fr-8))
+  if 0u < (bb(fr) and csouth1 and cwest1 and not (p.so[p.side] shl 9)):
+    result.add(move(fr,fr-9))
+  if 0u < (bb(fr) and cwest1 and not (p.so[p.side] shl 1)):
+    result.add(move(fr,fr-1))
     
 proc makemove*(p: Position, mv: Move): Position =
   result = p
@@ -309,4 +323,8 @@ when isMainModule:
   p = fen2p("8/p7/1P6/1r3p1k/7P/3R1KP1/8/8 b - - 0 0")
   echo "8/p7/1P6/1r3p1k/7P/3R1KP1/8/8 b - - 0 0"
   echo p
+  moveSeq = p.genmoves
+  echo "Generated moves:"
+  for mv in moveSeq:
+    echo mv
   echo p.p2fen
