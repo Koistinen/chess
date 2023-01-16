@@ -169,9 +169,13 @@ type Move* = object
   fr: uint8 # 64..127 promotion, 128..191 ep, 192..256 castling
   to: uint8 # high 2 bits say promotion piece in case of promotion
 
-proc move(fr, to: Square): Move =
-  result.fr = fr.uint8
-  result.to = to.uint8
+proc move(fr, to: int): Move =
+  result.fr = (fr and 63).uint8
+  result.to = (to and 63).uint8
+proc move(fr, to, flagsFr, flagsTo: int): Move =
+  result = move(fr,to)
+  result.fr = result.fr + flagsFr.uint8
+  result.to = result.to + flagsTo.uint8
 
 proc `$`*(mv: Move): string =
   let fr: Square = 0o77 and mv.fr
@@ -201,6 +205,7 @@ proc genmoves(p: Position): seq[Move] =
     csouth1 = 0xffffffffffffff00u # unneeded?
     cnorth2 = 0x0000ffffffffffffu # unneeded?
     csouth2 = 0xffffffffffff0000u # unneeded?
+
   var b = p.so[p.side] and p.knights
   while 0u < b:
     let fr = b.countTrailingZeroBits
@@ -215,7 +220,36 @@ proc genmoves(p: Position): seq[Move] =
       let to = t.countTrailingZeroBits
       t.clearbit(to)
       result.add(move(fr,to))
-  let fr = p.kings[p.side]
+      
+  const maskPromote = 0xff000000000000ffu
+  const maskStart = 0x00ff00000000ff00u
+  var d = [8, 64-8][p.side]
+  b = p.so[p.side] and p.pawns
+  b = b and not (p.so[0] or p.so[1]).rotateRightBits(d)
+  b = b and not maskPromote.rotateRightBits(d)
+  b = b and not (p.so[0] or p.so[1]).rotateRightBits(d).rotateRightBits(d)
+  var t = b and maskStart
+  while 0u < t:
+    let fr = t.countTrailingZeroBits
+    t.clearbit(fr)
+    result.add(move(fr,fr+d+d))
+  b = p.so[p.side] and p.pawns
+  b = b and not (p.so[0] or p.so[1]).rotateRightBits(d)
+  t = b and maskPromote
+  while 0u < t:
+    let fr = t.countTrailingZeroBits
+    t.clearbit(fr)
+    result.add(move(fr,fr+d,64,0))
+    result.add(move(fr,fr+d,64,64))
+    result.add(move(fr,fr+d,64,128))
+    result.add(move(fr,fr+d,64,192))
+  t = b and not maskPromote
+  while 0u < t:
+    let fr = t.countTrailingZeroBits
+    t.clearbit(fr)
+    result.add(move(fr,fr+d))
+
+  let fr = p.kings[p.side].int
   if 0u < (bb(fr) and cnorth1 and cwest1 and not (p.so[p.side] shr 7)):
     result.add(move(fr,fr+7))
   if 0u < (bb(fr) and cnorth1 and not (p.so[p.side] shr 8)):
