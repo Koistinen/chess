@@ -194,8 +194,8 @@ proc `$`*(mv: Move): string =
       of 0xc0: result.add('Q')
       else: assert false
     elif mv.fr in 128u..191u: result.add(" e.p.")
-    
-proc genmoves(p: Position): seq[Move] =
+
+proc knightReach(sq: int): BB =
   const
     ceast1 = 0x7f7f7f7f7f7f7f7fu
     cwest1 = 0xfefefefefefefefeu
@@ -205,22 +205,56 @@ proc genmoves(p: Position): seq[Move] =
     csouth1 = 0xffffffffffffff00u # unneeded?
     cnorth2 = 0x0000ffffffffffffu # unneeded?
     csouth2 = 0xffffffffffff0000u # unneeded?
+  let f = bb(sq)
+  let f1 = ((f and cwest1) shr 1) or ((f and ceast1) shl 1)
+  let f2 = ((f and cwest2) shr 2) or ((f and ceast2) shl 2)
+  let t1 = ((f2 and cnorth1) shl 8) or ((f2 and csouth1) shr 8)
+  let t2 = ((f1 and cnorth2) shl 16) or ((f1 and csouth2) shr 16)
+  result = t1 or t2
 
+proc addMoves(r: var seq[Move], fr: int, bb: BB) =
+  var t = bb
+  while 0u < t:
+    let to = t.countTrailingZeroBits
+    t.clearbit(to)
+    r.add(move(fr,to))
+
+proc inbound(file, rank: int): bool = file in 0..7 and rank in 0..7
+proc selfblocked(p: Position, sq: Square): bool =
+  0u < (p.so[p.side] and bb(sq))
+proc occupied(p: Position, sq: Square): bool =
+  0u < (bb(sq) and (p.so[0] or p.so[1]))
+
+proc genSweep(r: var seq[Move], p: Position, fr: Square, drank, dfile: int) =
+  var file = dfile + fr.file
+  var rank = drank + fr.rank
+  while inbound(file,rank) and not p.selfblocked(square(file, rank)):
+    r.add(move(fr,square(file, rank)))
+    if p.occupied(square(file, rank)): break
+    file = file + dfile
+    rank = rank + drank
+    
+proc genMoves(p: Position): seq[Move] =
+  const
+    ceast1 = 0x7f7f7f7f7f7f7f7fu
+    cwest1 = 0xfefefefefefefefeu
+    cnorth1 = 0x00ffffffffffffffu # unneeded?
+    csouth1 = 0xffffffffffffff00u # unneeded?
+  # knight moves
   var b = p.so[p.side] and p.knights
   while 0u < b:
     let fr = b.countTrailingZeroBits
     b.clearbit(fr)
-    let f = bb(fr)
-    let f1 = ((f and cwest1) shr 1) or ((f and ceast1) shl 1)
-    let f2 = ((f and cwest2) shr 2) or ((f and ceast2) shl 2)
-    let t1 = ((f2 and cnorth1) shl 8) or ((f2 and csouth1) shr 8)
-    let t2 = ((f1 and cnorth2) shl 16) or ((f1 and csouth2) shr 16)
-    var t = (t1 or t2) and not p.so[p.side]
-    while 0u < t:
-      let to = t.countTrailingZeroBits
-      t.clearbit(to)
-      result.add(move(fr,to))
-      
+    result.addMoves(fr, knightreach(fr) and not p.so[p.side])
+  # bishop moves
+  b = p.so[p.side] and p.bishops
+  while 0u < b:
+    let fr = b.countTrailingZeroBits
+    b.clearbit(fr)
+    for dfile in [-1, 1]:
+      for drank in [-1, 1]:
+        result.genSweep(p, fr, dfile, drank)
+  # pawn moves
   const maskPromote = 0xff000000000000ffu
   const maskStart = 0x00ff00000000ff00u
   var d = [8, 64-8][p.side]
@@ -248,7 +282,7 @@ proc genmoves(p: Position): seq[Move] =
     let fr = t.countTrailingZeroBits
     t.clearbit(fr)
     result.add(move(fr,fr+d))
-
+  # king moves
   let fr = p.kings[p.side].int
   if 0u < (bb(fr) and cnorth1 and cwest1 and not (p.so[p.side] shr 7)):
     result.add(move(fr,fr+7))
