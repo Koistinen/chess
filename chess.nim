@@ -34,6 +34,7 @@ type Position* = object # 64 bytes
 proc oc(p: Position): BB = p.so[0] or p.so[1]
 
 proc side*(p: Position): uint = 1 and p.halfmoves
+proc xside(p: Position): uint = 1 - p.side
   
 proc castlingString(p: Position): string =
   if 0 == p.castling: result = "-"
@@ -300,6 +301,36 @@ proc genMoves(p: Position): seq[Move] =
     let fr = t.countTrailingZeroBits
     t.clearbit(fr)
     result.add(move(fr,fr+d))
+  b = p.so[p.side] and p.pawns and cwest1
+  b = b and p.so[p.xside].rotateRightBits(d-1)
+  t = b and maskPromote
+  while 0u < t:
+    let fr = t.countTrailingZeroBits
+    t.clearbit(fr)
+    result.add(move(fr,fr+d,64,0))
+    result.add(move(fr,fr+d,64,64))
+    result.add(move(fr,fr+d,64,128))
+    result.add(move(fr,fr+d,64,192))
+  t = b and not maskPromote
+  while 0u < t:
+    let fr = t.countTrailingZeroBits
+    t.clearbit(fr)
+    result.add(move(fr,fr+d-1))
+  b = p.so[p.side] and p.pawns and ceast1
+  b = b and p.so[p.xside].rotateRightBits(d+1)
+  t = b and maskPromote
+  while 0u < t:
+    let fr = t.countTrailingZeroBits
+    t.clearbit(fr)
+    result.add(move(fr,fr+d,64,0))
+    result.add(move(fr,fr+d,64,64))
+    result.add(move(fr,fr+d,64,128))
+    result.add(move(fr,fr+d,64,192))
+  t = b and not maskPromote
+  while 0u < t:
+    let fr = t.countTrailingZeroBits
+    t.clearbit(fr)
+    result.add(move(fr,fr+d+1))
   # king moves
   let fr = p.kings[p.side].int
   if 0u < (bb(fr) and cnorth1 and cwest1 and not (p.so[p.side] shr 7)):
@@ -319,7 +350,7 @@ proc genMoves(p: Position): seq[Move] =
   if 0u < (bb(fr) and cwest1 and not (p.so[p.side] shl 1)):
     result.add(move(fr,fr-1))
     
-proc makemove*(p: Position, mv: Move): Position =
+proc makeMove*(p: Position, mv: Move): Position =
   result = p
   result.game50.inc
   result.halfmoves.inc
@@ -378,39 +409,25 @@ proc makemove*(p: Position, mv: Move): Position =
   else:
     assert false
 
+proc kingCapture*(p: Position): bool =
+  let moves = p.genMoves
+  for mv in moves:
+    if (0o77 and mv.to) == p.kings[p.xside]: return true
+  return false
+    
+proc genLegalMoves*(p: Position): seq[Move] =
+  for mv in p.genMoves:
+    if not p.makeMove(mv).kingCapture:
+      result.add(mv)
+    
 when isMainModule:
-  var mv: Move
-  mv.fr = "e2".str2sq.uint8
-  mv.to = "e4".str2sq.uint8
-  echo "Move: ", mv
-  var p = startingPosition()
-  echo p
-  echo p.p2fen
-  var moveSeq = p.genmoves
-  echo "Generated moves:"
-  for mv in moveSeq:
-    echo mv
-  p = p.makemove(mv)
-  echo p
-  moveSeq = p.genmoves
-  echo "Generated moves:"
-  for mv in moveSeq:
-    echo mv
-  mv = moveSeq[0]
-  echo mv
-  p = p.makemove(mv)
-  echo p
-  moveSeq = p.genmoves
-  echo "Generated moves:"
-  for mv in moveSeq:
-    echo mv
-  mv = moveSeq[0]
-  
-  p = fen2p("8/p7/1P6/1r3p1k/7P/3R1KP1/8/8 b - - 0 0")
+  let p = fen2p("8/p7/1P6/1r3p1k/7P/3R1KP1/8/8 b - - 0 0")
   echo "8/p7/1P6/1r3p1k/7P/3R1KP1/8/8 b - - 0 0"
   echo p
-  moveSeq = p.genmoves
   echo "Generated moves:"
-  for mv in moveSeq:
+  for mv in p.genmoves:
     echo mv
   echo p.p2fen
+  echo "Legal moves:"
+  for mv in p.genLegalMoves:
+    echo mv
