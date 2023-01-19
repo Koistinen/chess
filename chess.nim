@@ -4,11 +4,13 @@ import std/bitops
 
 type Square* = range[0..63]
 proc square*(file, rank: int):Square = rank*8+file
-proc rank*(sq: Square):int=sq.int shr 3
 proc file*(sq: Square):int=sq.int and 7
+proc rank*(sq: Square):int=sq.int shr 3
+proc file2ch(file: int): char = "abcdefgh"[file]
+proc rank2ch(rank:int): char = "12345678"[rank]
 proc sq2str* (sq: Square):string =
-  result.add("abcdefgh"[sq.file])
-  result.add("12345678"[sq.rank])
+  result.add(sq.file.file2ch)
+  result.add(sq.rank.rank2ch)
 proc str2sq(s: string): Square = s[0].ord-'a'.ord+8*(s[1].ord-'1'.ord)
   
 type BB* = uint64
@@ -419,7 +421,70 @@ proc genLegalMoves*(p: Position): seq[Move] =
   for mv in p.genMoves:
     if not p.makeMove(mv).kingCapture:
       result.add(mv)
-    
+      
+proc move2niceshortstr*(p: Position, mv: Move): string =
+  type MoveString = object
+    mv: Move
+    s: string
+  proc moveString(mv: Move, s: string): MoveString =
+    result.mv = mv
+    result.s = s
+  var msseq: seq[MoveString]
+  for mv in p.genLegalMoves:
+    let fr = mv.fr and 0o77
+    let to = mv.to and 0o77
+    let capt = if bb(to) == (bb(to) and p.so[p.xside]):
+                 "x"
+               else:
+                 ""
+    case p.pieceChar(mv.fr and 0o77)
+    of 'k','K':
+      msseq.add(moveString(mv,"K" & capt & sq2str(to)))
+      msseq.add(moveString(mv,"K" & sq2str(fr) & capt & sq2str(to)))
+    of 'q','Q':
+      msseq.add(moveString(mv,"Q" & capt & sq2str(to)))
+      msseq.add(moveString(mv,"Q" & fr.file.file2ch & capt & sq2str(to)))
+      msseq.add(moveString(mv,"Q" & fr.rank.rank2ch & capt & sq2str(to)))
+      msseq.add(moveString(mv,"Q" & sq2str(fr) & capt & sq2str(to)))
+    of 'r','R':
+      msseq.add(moveString(mv,"R" & capt & sq2str(to)))
+      msseq.add(moveString(mv,"R" & fr.file.file2ch & capt & sq2str(to)))
+      msseq.add(moveString(mv,"R" & fr.rank.rank2ch & capt & sq2str(to)))
+      msseq.add(moveString(mv,"R" & sq2str(fr) & capt & sq2str(to)))
+    of 'b','B':
+      msseq.add(moveString(mv,"B" & capt & sq2str(to)))
+      msseq.add(moveString(mv,"B" & fr.file.file2ch & capt & sq2str(to)))
+      msseq.add(moveString(mv,"B" & fr.rank.rank2ch & capt & sq2str(to)))
+      msseq.add(moveString(mv,"B" & sq2str(fr) & capt & sq2str(to)))
+    of 'n','N':
+      msseq.add(moveString(mv,"N" & capt & sq2str(to)))
+      msseq.add(moveString(mv,"N" & fr.file.file2ch & capt & sq2str(to)))
+      msseq.add(moveString(mv,"N" & fr.rank.rank2ch & capt & sq2str(to)))
+      msseq.add(moveString(mv,"N" & sq2str(fr) & capt & sq2str(to)))
+    of 'p','P':
+      var pr: string = ""
+      if mv.fr in 64u..127u:
+        case 0xc0 and mv.to
+        of 0x00: pr.add('N')
+        of 0x40: pr.add('B')
+        of 0x80: pr.add('R')
+        of 0xc0: pr.add('Q')
+        else: assert false
+      if "" == capt:
+        msseq.add(moveString(mv, sq2str(to)))
+      else:
+        msseq.add(moveString(mv, fr.file.file2ch & capt & sq2str(to)))
+      
+    else:
+      msseq.add(moveString(mv,"" & sq2str(fr) & sq2str(to)))
+  for ms in msseq:
+    if ms.mv == mv:
+      var n: int
+      for ms2 in msseq:
+        if ms.s == ms2.s: n.inc
+      if n == 1: return ms.s
+  return "No unique move description found!(error)"
+  
 when isMainModule:
   let p = fen2p("8/p7/1P6/1r3p1k/7P/3R1KP1/8/8 b - - 0 0")
   echo "8/p7/1P6/1r3p1k/7P/3R1KP1/8/8 b - - 0 0"
@@ -430,4 +495,4 @@ when isMainModule:
   echo p.p2fen
   echo "Legal moves:"
   for mv in p.genLegalMoves:
-    echo mv
+    echo mv, " ", p.move2niceshortstr(mv)
