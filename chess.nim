@@ -254,6 +254,24 @@ proc genMoves(p: Position): seq[Move] =
     for dfile in [-1, 1]:
       for drank in [-1, 1]:
         result.genSweep(p, fr, dfile, drank)
+  # rook moves
+  b = p.so[p.side] and p.rooks
+  while 0u < b:
+    let fr = b.countTrailingZeroBits
+    b.clearbit(fr)
+    for dfile in -1..1:
+      for drank in -1..1:
+        if 0 == dfile*drank and 0 != dfile+drank:
+          result.genSweep(p, fr, dfile, drank)
+  # queen moves
+  b = p.so[p.side] and p.queens
+  while 0u < b:
+    let fr = b.countTrailingZeroBits
+    b.clearbit(fr)
+    for dfile in -1..1:
+      for drank in -1..1:
+        if 0 != dfile or 0 != drank:
+          result.genSweep(p, fr, dfile, drank)
   # pawn moves
   const maskPromote = 0xff000000000000ffu
   const maskStart = 0x00ff00000000ff00u
