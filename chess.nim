@@ -496,3 +496,6 @@ when isMainModule:
   echo "Legal moves:"
   for mv in p.genLegalMoves:
     echo mv, " ", p.move2niceshortstr(mv)
+echo "♛♜♝♞♟♙♘♗♖♕♔"
+let ♛♜♝♞♟♙♘♗♖♕♔ = 42
+echo ♛♜♝♞♟♙♘♗♖♕♔
