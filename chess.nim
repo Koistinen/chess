@@ -412,9 +412,15 @@ proc makeMove*(p: Position, mv: Move): Position =
     assert false
 
 proc kingCapture*(p: Position): bool =
-  let moves = p.genMoves
-  for mv in moves:
+  for mv in p.genMoves:
     if (0o77 and mv.to) == p.kings[p.xside]: return true
+  return false
+    
+proc inCheck*(p: Position): bool =
+  var p1 = p
+  inc(p1.halfmoves)
+  for mv in p1.genMoves:
+    if (0o77 and mv.to) == p.kings[p.side]: return true
   return false
     
 proc genLegalMoves*(p: Position): seq[Move] =
@@ -484,9 +490,10 @@ proc move2niceshortstr*(p: Position, mv: Move): string =
         if ms.s == ms2.s: n.inc
       if n == 1: return ms.s
   return "No unique move description found!(error)"
-  
+
 when isMainModule:
-  let p = fen2p("8/p7/1P6/1r3p1k/7P/3R1KP1/8/8 b - - 0 0")
+#  let p = fen2p("8/p7/1P6/1r3p1k/7P/3R1KP1/8/8 b - - 0 0")
+  let p = fen2p("1k6/8/8/8/8/8/8/R3K3 w - - 0 0")
   echo "8/p7/1P6/1r3p1k/7P/3R1KP1/8/8 b - - 0 0"
   echo p
   echo "Generated moves:"
@@ -495,7 +502,8 @@ when isMainModule:
   echo p.p2fen
   echo "Legal moves:"
   for mv in p.genLegalMoves:
-    echo mv, " ", p.move2niceshortstr(mv)
-echo "♛♜♝♞♟♙♘♗♖♕♔"
-let ♛♜♝♞♟♙♘♗♖♕♔ = 42
-echo ♛♜♝♞♟♙♘♗♖♕♔
+    echo mv, " ", p.move2niceshortstr(mv),
+      if p.makeMove(mv).inCheck: "+" else: ""
+echo "♛♜♝♞♟□♙♘♗♖♕♔", "\xE2\xA9\xA9"
+let ♔ = 42
+echo "♔ = ", ♔, " Bitboard: ⩩"
