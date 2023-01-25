@@ -427,7 +427,15 @@ proc genLegalMoves*(p: Position): seq[Move] =
   for mv in p.genMoves:
     if not p.makeMove(mv).kingCapture:
       result.add(mv)
-      
+
+proc isCheckmate(p: Position): bool =
+  if p.genLegalMoves.len > 0: return false
+  return p.inCheck
+
+proc isStalemate(p: Position): bool =
+  if p.genLegalMoves.len > 0: return false
+  return not p.inCheck
+  
 proc move2niceshortstr*(p: Position, mv: Move): string =
   type MoveString = object
     mv: Move
@@ -493,9 +501,11 @@ proc move2niceshortstr*(p: Position, mv: Move): string =
 
 when isMainModule:
 #  let p = fen2p("8/p7/1P6/1r3p1k/7P/3R1KP1/8/8 b - - 0 0")
-  let p = fen2p("1k6/8/8/8/8/8/8/R3K3 w - - 0 0")
+  let p = fen2p("k1K5/1R6/8/8/8/8/8/8 b - - 0 0")
   echo "8/p7/1P6/1r3p1k/7P/3R1KP1/8/8 b - - 0 0"
   echo p
+  echo "Is checkmate: ", p.isCheckmate
+  echo "Is stalemate: ", p.isStalemate
   echo "Generated moves:"
   for mv in p.genmoves:
     echo mv
