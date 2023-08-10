@@ -1,4 +1,4 @@
-# Copyright 2022 Urban Koistinen - GNU Affero
+# Copyright 2022-2023 Urban Koistinen - GNU Affero
 import strutils
 #import std/bitops
 
@@ -13,32 +13,20 @@ proc sq2str* (sq: int): string =
   result.add(sq.sq2rank.rank2ch)
 
 # -6..6: ♚♛♜♝♞♟□♙♘♗♖♕♔
-#  ♚
-#  ♛
-#  ♜
-#  ♝
-#  ♞
-#  ♟
-#  □
-#  ♙
-#  ♘
-#  ♗
-#  ♖
-#  ♕
-#  ♔
-# unmoved at the edges
-  
-type Piece = enum
+type Piece* = enum
   ♚ = -6, ♛, ♜, ♝, ♞, ♟, □, ♙, ♘, ♗, ♖, ♕, ♔
+type Side* = 0..1
+const white* = 0
+const black* = 1
 
-type Pos* = object # 64 bytes
-  bd: array[0..63, Piece]
+type Pos* = object
+  bd*: array[0..63, Piece]
   g50: int
-  side: int
+  side*: int
   ep: int
   castling: int
 
-proc StartingPos: Pos =
+proc startingPos*: Pos =
   result.bd = [
     ♖,♘,♗,♕,♔,♗,♘,♖,
     ♙,♙,♙,♙,♙,♙,♙,♙,
@@ -84,6 +72,9 @@ proc `$`*(p: Pos): string =
 
 proc addPiece*(p: var Pos, piece: char, sq: int) =
   p.bd[sq] = (fenPc.find(piece)-6).Piece
+
+proc addPiece*(p: var Pos, piece: Piece, sq: int) =
+  p.bd[sq] = piece
 
 proc p2fen(p: Pos): string =
   for rank in countdown(7,0):
@@ -156,7 +147,7 @@ proc `$`*(mv: Move): string = result.add(
       else: ""))
 
 proc inbound(file, rank: int): bool = file in 0..7 and rank in 0..7
-proc occupied(p: Pos, sq: int): bool = □ != p.bd[sq]
+proc occupied*(p: Pos, sq: int): bool = □ != p.bd[sq]
 proc ownPiece(p: Pos, sq: int): bool =
   if p.side == 0: □ < p.bd[sq]
   else: □ > p.bd[sq]
@@ -312,11 +303,11 @@ proc genLegalMoves*(p: Pos): seq[Move] =
     if not p1.kingCapture:
       result.add(mv)
 
-proc isCheckmate(p: Pos): bool =
+proc isCheckmate*(p: Pos): bool =
   if p.genLegalMoves.len > 0: return false
   return p.inCheck
 
-proc isStalemate(p: Pos): bool =
+proc isStalemate*(p: Pos): bool =
   if p.genLegalMoves.len > 0: return false
   return not p.inCheck
   
@@ -378,18 +369,13 @@ proc move2niceshortstr*(p: Pos, mv: Move): string =
   return "No unique move description found!(error)"
 
 when isMainModule:
-#  let p = fen2p("8/p7/1P6/1r3p1k/7P/3R1KP1/8/8 b - - 0 0")
-  let p = fen2p("k1K5/8/8/8/8/8/8/1R6 b - - 0 0")
-  echo "8/p7/1P6/1r3p1k/7P/3R1KP1/8/8 b - - 0 0"
-  echo p
-  echo "Is checkmate: ", p.isCheckmate
-  echo "Is stalemate: ", p.isStalemate
-  echo "Generated moves:"
-  for mv in p.genmoves:
-    echo mv
-  echo p.p2fen
-  echo "Legal moves:"
-  for mv in p.genLegalMoves:
-    echo mv, " ", p.move2niceshortstr(mv)
-#      if p.makeMove(mv).inCheck: "+" else: ""
-echo "♛♜♝♞♟□♙♘♗♖♕♔"
+  const
+    n: int = 3
+    aPiece: array[1..n, Piece] = [♔, ♖, ♛]
+#        ♚ = -6, ♛, ♜, ♝, ♞, ♟, □, ♙, ♘, ♗, ♖, ♕, ♔
+  var
+    aSq: array[1..n, int]
+    tot, nLegal, nStalemate, nCheckmate: int
+  for i in 1..n:
+    aSq[i] = 63
+  
