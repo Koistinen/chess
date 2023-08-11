@@ -76,7 +76,7 @@ proc addPiece*(p: var Pos, piece: char, sq: int) =
 proc addPiece*(p: var Pos, piece: Piece, sq: int) =
   p.bd[sq] = piece
 
-proc p2fen(p: Pos): string =
+proc p2fen*(p: Pos): string =
   for rank in countdown(7,0):
     var empty = 0
     for file in countup(0,7):
@@ -101,7 +101,7 @@ proc p2fen(p: Pos): string =
   result.add(' ')
   result.add('0')
 
-proc fen2p(s: string): Pos =
+proc fen2p*(s: string): Pos =
   var a: seq[string] = split(s)
   var rank: int = 7
   var file: int = 0
@@ -292,7 +292,9 @@ proc kingCapture*(p: Pos): bool =
     
 proc inCheck*(p: Pos): bool =
   let sq = p.bd.find([♚, ♔][p.xside])
-  for mv in p.genMoves:
+  var p2 = p
+  p2.side = p2.xside
+  for mv in p2.genMoves:
     if mv.to == sq: return true
   return false
     
@@ -369,13 +371,8 @@ proc move2niceshortstr*(p: Pos, mv: Move): string =
   return "No unique move description found!(error)"
 
 when isMainModule:
-  const
-    n: int = 3
-    aPiece: array[1..n, Piece] = [♔, ♖, ♛]
-#        ♚ = -6, ♛, ♜, ♝, ♞, ♟, □, ♙, ♘, ♗, ♖, ♕, ♔
-  var
-    aSq: array[1..n, int]
-    tot, nLegal, nStalemate, nCheckmate: int
-  for i in 1..n:
-    aSq[i] = 63
-  
+  var p = fen2p("///////kQK5 b - - 0")
+  echo p
+  echo p.incheck
+  echo p.kingCapture
+  echo p.genLegalMoves.len
