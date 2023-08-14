@@ -126,7 +126,7 @@ proc fen2p*(s: string): Pos =
 
 type Move* = object
   fr: int
-  to: int
+  to*: int
   flags: int
   promoted: int
 
@@ -371,8 +371,8 @@ proc move2niceshortstr*(p: Pos, mv: Move): string =
   return "No unique move description found!(error)"
 
 when isMainModule:
-  var p = fen2p("///////kQK5 b - - 0")
+  var p = fen2p("///////k1KQ4 b - - 0")
   echo p
-  echo p.incheck
-  echo p.kingCapture
-  echo p.genLegalMoves.len
+  echo "In check: ", p.incheck, " King Capure: ", p.kingCapture
+  for mv in p.genLegalMoves:
+    echo mv

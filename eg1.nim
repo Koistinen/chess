@@ -46,15 +46,16 @@ for ply in -1..24:
               of -1: # illegal?
                 dtc[index] = if p.kingCapture: illegal
                              else: unknown
-              of 0: # check mate?
+              of 0: # check mate or stalemate or queen capture?
                 if black == side:
                   if p.isCheckmate:
                     dtc[index] = checkMate
-                    inc c
-                  else:
-                    if p.isStalemate:
+                  if p.isStalemate:
+                    dtc[index] = draw
+                  for mv in p.genLegalMoves:
+                    if p.bd[mv.to] == ♕:
                       dtc[index] = draw
-              else:
+              else: # ply > 0
                 if white == side:
                   for mv in p.genLegalMoves:
                     var p2 = p
@@ -63,7 +64,7 @@ for ply in -1..24:
                       if dtc[index] != ply.int8:
                         inc c
                       dtc[index] = ply.int8
-                else:
+                else: # black
                   var best = checkMate
                   for mv in p.genLegalMoves:
                     var p2 = p
