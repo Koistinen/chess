@@ -45,7 +45,7 @@ proc castlingString(p: Pos): string =
     if 0 != (1 shl i and p.castling): result.add("KQkq"[i])
   if 0 == result.len: result = "-"
 
-const fenPc: array[-6..6, char] = ['k','q','r','b','n','p',' ','P','N','B','R','Q','K']
+const fenPc*: array[-6..6, char] = ['k','q','r','b','n','p',' ','P','N','B','R','Q','K']
 proc pieceChar(p: Pos, sq: int): char =
   fenPc[p.bd[sq].int]
 

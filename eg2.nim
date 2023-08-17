@@ -62,45 +62,54 @@ proc tableClass(pl: PieceList): int =
     if v > 6: # white piece
       dec v
 
+proc name(pl: PieceList): string =
+  for pi in pl:
+    result.add(fenPc[pi.pt.int])
+
+proc write(f: FileStream, s: seq[int8]) =
+  f.writeData(s[0].addr, s.len)
+
 proc genTb(pl: var PieceList) =
-  var tb: seq[seq[int8]]
+  var wz50 = newSeq[int8](pl.indexSize) # btm
+  var bz50 = newSeq[int8](pl.indexSize) # wtm
   pl.first
   while true:
+    var
+      p: Pos
+      w, b: int8
     block outer:
-      var
-        p: Pos
-        v: int8
-      var tbIndex = genIndex(pl)
       for pi in pl:
-        if p.bd[pi.sq] != □:
-          tb[white][tbIndex] = illegal
-          tb[black][tbIndex] = illegal
+        if p.bd[pi.sq] != □: # occupied?
+          w = illegal
+          b = illegal
           break outer
         p.addPiece(pi.pt, pi.sq)
       p.side = black
-      v = unknown
+      b = unknown
       if p.isCheckmate:
-        v = checkmate
+        b = checkmate
       if p.isStalemate:
-        v = stalemate
+        b = stalemate
       if p.kingCapture:
-        v = illegal
-      tb[black][tbIndex] = v
+        b = illegal
       p.side = white
-      v = unknown
+      w = unknown
       if p.kingCapture:
-        v = illegal
-      tb[white][tbIndex] = v
+        w = illegal
     if not pl.next:
       break
-  var f = newFileStream("KQK.bigbin", fmWrite)
+    let tbIndex = genIndex(pl)
+    wz50[tbIndex] = w
+    bz50[tbIndex] = b
+  var f = newFileStream(pl.name & ".eg2", fmWrite)
   if not f.isNil:
-    f.write tb
+    f.write(wz50)
+    f.write(bz50)
   else:
     echo "Error creating file."
   f.flush
 
-var p = fen2p("KQk//////// b - - 0")
+var p = fen2p("KQk b - - 0")
 var pl = p.genPieceList
 genTb(pl)
 # ♚, ♛, ♜, ♝, ♞, ♟, □, ♙, ♘, ♗, ♖, ♕ , ♔
