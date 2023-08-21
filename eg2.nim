@@ -31,7 +31,7 @@ proc genPieceList(p: Pos): PieceList =
     let pt = p.bd[sq]
     if pt != □:
       result.add(pt, sq)
-  result.sort(cmpPieceInfo, Descending) # normalizing
+  result.sort(cmpPieceInfo, Descending)
 
 proc first(pl: var PieceList) =
   for i in 0..<pl.len:
@@ -66,10 +66,15 @@ proc name(pl: PieceList): string =
   for pi in pl:
     result.add(fenPc[pi.pt.int])
 
+proc lookup(p: Pos): int =
+  # fake lookup for now
+  return draw
+
 proc write(f: FileStream, s: seq[int8]) =
   f.writeData(s[0].addr, s.len)
 
 proc genTb(pl: var PieceList) =
+  #initialize
   var wz50 = newSeq[int8](pl.indexSize) # btm
   var bz50 = newSeq[int8](pl.indexSize) # wtm
   pl.first
@@ -96,11 +101,55 @@ proc genTb(pl: var PieceList) =
       w = unknown
       if p.kingCapture:
         w = illegal
-    if not pl.next:
-      break
     let tbIndex = genIndex(pl)
     wz50[tbIndex] = w
     bz50[tbIndex] = b
+    if not pl.next:
+      break
+  # dtz50 = 1
+  pl.first
+  while true:
+    var
+      p: Pos
+      w, b: int8
+    block outer:
+      for pi in pl:
+        if p.bd[pi.sq] != □: # occupied?
+          w = illegal
+          b = illegal
+          break outer
+        p.addPiece(pi.pt, pi.sq)
+      let tbIndex = genIndex(pl)
+      p.side = black
+      b = bz50[tbIndex]
+      if b == unknown:
+        # z50 move avoiding loss?
+        let ml = p.genLegalMoves
+        for mv in ml:
+          if p.isCapture(mv):
+            var p2 = p
+            p2.makeMove(mv)
+            if draw == lookup(p2):
+              b = draw
+          # ignore pawn moves, no pawns allowed
+      bz50[tbIndex] = b
+      p.side = white
+      w = wz50[tbIndex]
+      if w == unknown:
+        # any win with z50 == 1?
+        let ml = p.genLegalMoves
+        for mv in ml:
+          var p2 = p
+          p2.makeMove(mv)
+          if p.isCapture(mv):
+            if lookup(p2) < unknown:
+              w = 1 # win with z50 == 1
+          else:
+            if checkmate == bz50[p2.genPieceList.genIndex]:
+              w = 1 # mate in 1
+      wz50[tbIndex] = w
+    if not pl.next:
+      break
   var f = newFileStream(pl.name & ".eg2", fmWrite)
   if not f.isNil:
     f.write(wz50)

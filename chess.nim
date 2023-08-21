@@ -221,8 +221,10 @@ proc genMoves(p: Pos): seq[Move] =
             result.add(move(fr, fr-8))
             if 6 == rank and not p.occupied(fr-16):
               result.add(move(fr, fr-16))
-          if file > 0 and p.xPiece(fr-9): result.add(move(fr,fr-9))
-          if file < 7 and p.xPiece(fr-7): result.add(move(fr,fr-7))
+          if file > 0:
+            if p.xPiece(fr-9): result.add(move(fr,fr-9))
+          if file < 7:
+            if p.xPiece(fr-7): result.add(move(fr, fr-7))
       of ♙:
         if 6 == rank:
           if not p.occupied(fr+8):
@@ -239,16 +241,27 @@ proc genMoves(p: Pos): seq[Move] =
             result.add(move(fr, fr+8))
             if 1 == rank and not p.occupied(fr+16):
               result.add(move(fr, fr-16))
-          if file > 0 and p.xPiece(fr+7): result.add(move(fr,fr+7))
-          if file < 7 and p.xPiece(fr+9): result.add(move(fr,fr+9))
+          if file > 0:
+            if p.xPiece(fr+7): result.add(move(fr, fr+7))
+          if file < 7:
+            if p.xPiece(fr+9): result.add(move(fr, fr+9))
   if p.ep > 0:
-    if 0 == p.side:
-      if 0 < p.ep.sq2file and ♙ == p.bd[p.ep-9]: result.add(move(p.ep-9, p.ep, 1))
-      if 7 > p.ep.sq2file and ♙ == p.bd[p.ep-7]: result.add(move(p.ep-7, p.ep, 1))
+    if white == p.side:
+      if 0 < p.ep.sq2file and ♙ == p.bd[p.ep-9]:
+        result.add(move(p.ep-9, p.ep, 1))
+      if 7 > p.ep.sq2file and ♙ == p.bd[p.ep-7]:
+        result.add(move(p.ep-7, p.ep, 1))
     else:
-      if 0 < p.ep.sq2file and ♟ == p.bd[p.ep+7]: result.add(move(p.ep+7, p.ep, 1))
-      if 7 > p.ep.sq2file and ♟ == p.bd[p.ep+9]: result.add(move(p.ep+9, p.ep, 1))
-    
+      if 0 < p.ep.sq2file and ♟ == p.bd[p.ep+7]:
+        result.add(move(p.ep+7, p.ep, 1))
+      if 7 > p.ep.sq2file and ♟ == p.bd[p.ep+9]:
+        result.add(move(p.ep+9, p.ep, 1))
+
+proc isCapture*(p: Pos, mv: Move): bool =
+  if p.bd[mv.to] != □:
+    return true
+  return 1 == mv.flags
+
 proc makeMove*(p: var Pos, mv: Move) =
   p.ep = 0
   if p.bd[mv.fr] == [♙, ♟][p.side]:  
@@ -369,7 +382,7 @@ proc move2niceshortstr*(p: Pos, mv: Move): string =
         if ms.s == ms2.s: n.inc
       if n == 1: return ms.s
   return "No unique move description found!(error)"
-
+  
 when isMainModule:
   var p = fen2p("///////k1KQ4 b - - 0")
   echo p
