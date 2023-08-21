@@ -75,6 +75,7 @@ proc write(f: FileStream, s: seq[int8]) =
 
 proc genTb(pl: var PieceList) =
   #initialize
+  echo "ply = -1..0"
   var wz50 = newSeq[int8](pl.indexSize) # btm
   var bz50 = newSeq[int8](pl.indexSize) # wtm
   pl.first
@@ -106,7 +107,8 @@ proc genTb(pl: var PieceList) =
     bz50[tbIndex] = b
     if not pl.next:
       break
-  # dtz50 = 1
+  # z50 = 1
+  echo "ply = 1"
   pl.first
   while true:
     var
@@ -150,6 +152,49 @@ proc genTb(pl: var PieceList) =
       wz50[tbIndex] = w
     if not pl.next:
       break
+  for ply in 2..100:
+    echo "ply = ", ply
+    pl.first
+    while true:
+      var
+        p: Pos
+        w, b: int8
+      block outer:
+        for pi in pl:
+          if p.bd[pi.sq] != □: # occupied?
+            w = illegal
+            b = illegal
+            break outer
+          p.addPiece(pi.pt, pi.sq)
+        let tbIndex = genIndex(pl)
+        p.side = black
+        b = bz50[tbIndex]
+        if b == unknown:
+          # z50 move avoiding loss?
+          let ml = p.genLegalMoves
+          var best = ply-1
+          for mv in ml:
+            if not p.isCapture(mv):
+              var p2 = p
+              p2.makeMove(mv)
+              if wz50[p2.genPieceList.genIndex] > ply-1:
+                best = unknown
+          b = best.int8
+        bz50[tbIndex] = b
+        p.side = white
+        w = wz50[tbIndex]
+        if w == unknown:
+          # any win with z50 == ply?
+          let ml = p.genLegalMoves
+          for mv in ml:
+            var p2 = p
+            p2.makeMove(mv)
+            if not p.isCapture(mv):
+              if ply-1 == bz50[p2.genPieceList.genIndex]:
+                w = ply.int8
+        wz50[tbIndex] = w
+      if not pl.next:
+        break
   var f = newFileStream(pl.name & ".eg2", fmWrite)
   if not f.isNil:
     f.write(wz50)
