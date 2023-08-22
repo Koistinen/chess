@@ -15,7 +15,7 @@ proc genIndex(p: Pos): int =
       ♕sq = sq
     else:
       discard
-  return ♕sq+64*(♚sq+64*(♔sq+64*p.side))
+  return ♚sq+64*(♕sq+64*(♔sq+64*p.side))
 
 var f = newFileStream("KQk.eg2", fmread)
 discard f.readData(dtc.addr, dtc.sizeof)
@@ -43,10 +43,10 @@ for ♔sq in 0..63:
     for ♕sq in 0..63:
       if ♔sq != ♚sq and ♔sq != ♕sq and ♚sq != ♕sq:
         var p: Pos
-        p.addPiece(♔, ♔sq)
         p.addPiece(♚, ♚sq)
         p.addPiece(♕, ♕sq)
-        p.side = white
+        p.addPiece(♔, ♔sq)
+        p.side = black
         var index = p.genIndex
-        if dtc[index] == 19:
+        if dtc[index] == 1:
           echo p.p2fen

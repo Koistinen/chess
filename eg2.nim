@@ -2,6 +2,7 @@
 import chess
 import streams
 import std/algorithm
+import std/sequtils
 
 const illegal = -1
 const checkMate = 0
@@ -76,8 +77,8 @@ proc write(f: FileStream, s: seq[int8]) =
 proc genTb(pl: var PieceList) =
   #initialize
   echo "ply = -1..0"
-  var wz50 = newSeq[int8](pl.indexSize) # btm
-  var bz50 = newSeq[int8](pl.indexSize) # wtm
+  var wz50 = newSeq[int8](pl.indexSize) # wtm
+  var bz50 = newSeq[int8](pl.indexSize) # btm
   pl.first
   while true:
     var
@@ -86,8 +87,6 @@ proc genTb(pl: var PieceList) =
     block outer:
       for pi in pl:
         if p.bd[pi.sq] != □: # occupied?
-          w = illegal
-          b = illegal
           break outer
         p.addPiece(pi.pt, pi.sq)
       p.side = black
@@ -134,6 +133,7 @@ proc genTb(pl: var PieceList) =
             if draw == lookup(p2):
               b = draw
           # ignore pawn moves, no pawns allowed
+        # ignore possibility of noncapture drawing
       bz50[tbIndex] = b
       p.side = white
       w = wz50[tbIndex]
@@ -152,7 +152,7 @@ proc genTb(pl: var PieceList) =
       wz50[tbIndex] = w
     if not pl.next:
       break
-  for ply in 2..100:
+  for ply in 2..2:
     echo "ply = ", ply
     pl.first
     while true:
@@ -172,7 +172,7 @@ proc genTb(pl: var PieceList) =
         if b == unknown:
           # z50 move avoiding loss?
           let ml = p.genLegalMoves
-          var best = ply-1
+          var best = ply
           for mv in ml:
             if not p.isCapture(mv):
               var p2 = p
