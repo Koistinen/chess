@@ -43,10 +43,46 @@ proc totalLength(pis: seq[PieceIndex]): int =
   for pi in pis:
     result.inc(pi.length)
 
+var pis = pieceIndexSeq(endgame)
+proc size(pis: seq[PieceIndex]): int =
+  1 bsl pis.totalLength
 
+# I hope the compiler is able to optimize these to use PDEP/PEXT
+proc depositBits(msk, source: int): int =
+  var b=0
+  var m=msk
+  while m != 0:
+    if source.testBit(b) != 0:
+      result.setMask(mask.band -mask)
+    m.mask(m - 1)
+    inc b
+ 
+proc extractBits(msk, source: int): int =
+  var b=0
+  var m=msk
+  while m != 0:
+    if source.band msk.band -mask != 0:
+      result.setBit b
+    m.mask(m - 1)
+    inc b
 
-b🛇 = newBitSeq()
-for i in 0..<
+U64 _pext_u64(U64 val, U64 mask) {
+  U64 res = 0;
+  for (U64 bb = 1; mask; bb += bb) {
+    if ( val & mask & -mask )
+      res |= bb;
+    mask &= mask - 1;
+  }
+  return res;
+} 
+
+proc index(pis: seq[PieceIndex]): int =
+  for pi = in pis:
+    
+
+b🛇 = newBitSeq(pis.size)
+for i in 0..<pis.size:
+  
 
 proc genIndex(p: Pos): int =
   var ♔sq, ♚sq, ♕sq: 0..63
