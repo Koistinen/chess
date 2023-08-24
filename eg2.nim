@@ -10,6 +10,8 @@ const unknown = 101
 const draw =102
 const staleMate = 103
 
+var globalCount = 0
+
 type
   PieceInfo = object
     pt: Piece
@@ -91,19 +93,21 @@ proc genTb(pl: var PieceList) =
         p.addPiece(pi.pt, pi.sq)
       p.side = black
       b = unknown
-      if p.isCheckmate:
-        b = checkmate
-      if p.isStalemate:
-        b = stalemate
       if p.kingCapture:
         b = illegal
+      else:
+        if p.isCheckmate:
+          b = checkmate
+          inc globalCount
+        if p.isStalemate:
+          b = stalemate
       p.side = white
       w = unknown
       if p.kingCapture:
         w = illegal
-    let tbIndex = genIndex(pl)
-    wz50[tbIndex] = w
-    bz50[tbIndex] = b
+      let tbIndex = genIndex(pl)
+      wz50[tbIndex] = w
+      bz50[tbIndex] = b
     if not pl.next:
       break
   # z50 = 1
@@ -112,17 +116,14 @@ proc genTb(pl: var PieceList) =
   while true:
     var
       p: Pos
-      w, b: int8
     block outer:
       for pi in pl:
         if p.bd[pi.sq] != □: # occupied?
-          w = illegal
-          b = illegal
           break outer
         p.addPiece(pi.pt, pi.sq)
       let tbIndex = genIndex(pl)
       p.side = black
-      b = bz50[tbIndex]
+      var b = bz50[tbIndex]
       if b == unknown:
         # z50 move avoiding loss?
         let ml = p.genLegalMoves
@@ -136,7 +137,7 @@ proc genTb(pl: var PieceList) =
         # ignore possibility of noncapture drawing
       bz50[tbIndex] = b
       p.side = white
-      w = wz50[tbIndex]
+      var w = wz50[tbIndex]
       if w == unknown:
         # any win with z50 == 1?
         let ml = p.genLegalMoves
@@ -158,17 +159,14 @@ proc genTb(pl: var PieceList) =
     while true:
       var
         p: Pos
-        w, b: int8
       block outer:
         for pi in pl:
           if p.bd[pi.sq] != □: # occupied?
-            w = illegal
-            b = illegal
             break outer
           p.addPiece(pi.pt, pi.sq)
         let tbIndex = genIndex(pl)
         p.side = black
-        b = bz50[tbIndex]
+        var b = bz50[tbIndex]
         if b == unknown:
           # z50 move avoiding loss?
           let ml = p.genLegalMoves
@@ -182,14 +180,14 @@ proc genTb(pl: var PieceList) =
           b = best.int8
         bz50[tbIndex] = b
         p.side = white
-        w = wz50[tbIndex]
+        var w = wz50[tbIndex]
         if w == unknown:
           # any win with z50 == ply?
           let ml = p.genLegalMoves
           for mv in ml:
-            var p2 = p
-            p2.makeMove(mv)
             if not p.isCapture(mv):
+              var p2 = p
+              p2.makeMove(mv)
               if ply-1 == bz50[p2.genPieceList.genIndex]:
                 w = ply.int8
         wz50[tbIndex] = w
@@ -207,3 +205,4 @@ var p = fen2p("KQk b - - 0")
 var pl = p.genPieceList
 genTb(pl)
 # ♚, ♛, ♜, ♝, ♞, ♟, □, ♙, ♘, ♗, ♖, ♕ , ♔
+echo "globalCount = ", globalCount

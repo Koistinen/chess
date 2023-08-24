@@ -18,9 +18,9 @@ type Piece* = enum
 type Side* = 0..1
 const white* = 0
 const black* = 1
-
+type Square = 0..63
 type Pos* = object
-  bd*: array[0..63, Piece]
+  bd*: array[Square, Piece]
   g50: int
   side*: int
   ep: int
