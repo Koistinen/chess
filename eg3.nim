@@ -4,6 +4,32 @@ import streams
 import std/bitops
 import std/unicode
 
+#  bz50[n+1] =
+#    1 if every move leads to wz50[n][to_i]
+#      and at least one move leads to wz50[n]-wz50[n-1]
+#    0 else
+#    
+#  wz50[n+1] =
+#    1 if any move leads to bz50[n]
+#    wz50[n-1] else
+#    
+#  bz50[0] =
+#    1 if checkmate
+#      or one black piece has been captured and white win
+#        (lookup in subtable)
+#    0 else
+#      
+#  wz50[0] =
+#    1 if one white piece has been captured and white win
+#      (lookup in subtable)
+#    wz50[-1] else
+#    
+#  wz50[-1] =
+#    1 if illegal even if considering possibility of
+#        one white piece having been captured
+#
+#  only look at moves from legal positions
+  
 type BitSeq = object
   size: int
   s: seq[uint64]
