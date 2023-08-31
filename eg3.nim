@@ -24,31 +24,12 @@ import std/unicode
 #      (lookup in subtable)
 #    wz50[-1] else
 #    
-#  wz50[-1] =
+#  bz50[-1] =
 #    1 if illegal even if considering possibility of
-#        one white piece having been captured
+#        black pieces having been captured
 #    0 else
 #
 #  only look at moves from legal positions
-
-type BitSeq = object
-  size: int
-  s: seq[uint64]
-
-proc newBitSeq(size: int): BitSeq =
-  result.size = size
-  result.s = newSeq[uint64]((size+63) div 64)
-  
-proc `[]=`(bs: var BitSeq, index: int, val: bool) =
-  assert index in 0..<bs.size
-  if val:
-    bs.s[index div 64].setBit(index mod 64)
-  else:
-    bs.s[index div 64].clearBit(index mod 64)
-
-proc `[]`(bs: BitSeq, index: int): bool =
-  assert index in 0..<bs.size
-  return bs.s[index div 64].testBit(index mod 64)
 
 const endgame = "♔♖♚"
 
@@ -69,7 +50,7 @@ proc pieceIndexSeq(eg: string): seq[PieceIndex] =
 
 proc totalLength(pis: seq[PieceIndex]): int =
   for pi in pis:
-    result.inc(pi.length)
+    result.inc pi.length
 
 var pis = pieceIndexSeq(endgame)
 proc size(pis: seq[PieceIndex]): int =
@@ -107,30 +88,93 @@ proc index(pis: seq[PieceIndex]): int =
 proc set(pis: var seq[PieceIndex], i: int) =
   for i, pi in pis:
     pis[i].sq = extractBits(pi.bits, i)
-    
 
-var b🛇 = newBitSeq(pis.size)
+var b🛇 = newSeq[bool](pis.size)
 for i in 0..<pis.size:
   pis.set(i)
   var w, b = 0
   var p: Pos
   for pi in pis:
+    var illegal = false
     if p.occupied(pi.sq):
       if pi.pt.isBlack: discard
       elif p.bd[pi.sq].isWhite: discard
+      elif p.bd[pi.sq] == ♚: illegal = true
+      else:
+        p.addPiece(pi.pt, pi.sq)
+        inc w
+        dec b
+    else:
+      p.addPiece(pi.pt, pi.sq)
+      if pi.pt.isWhite:
+        inc w
+      else:
+        inc b
+  p.side = black
+  if not illegal:
+    illegal = p.kingCapture
+  b🛇[i] = illegal
+    
+var bz50 = newSeq[seq[bool]](101)
+var wz50 = newSeq[seq[bool]](101)
+bz50[0] = newSeq[bool](pis.size)
+for i in 0..<pis.size:
+  pis.set(i)
+  var w, b = 0
+  var illegal = false
+  var p: Pos
+  for pi in pis:
+    if p.occupied(pi.sq):
+      if pi.pt.isBlack:
+        if p.bd[pi.sq].isBlack: illegal = true
+      elif p.bd[pi.sq] == ♚: illegal = true
+      elif p.bd[pi.sq].isWhite:
+        if pi.pt.isWhite: illegal = true
       else:
         p.addPiece(pi.pt, pi.sq)
         inc w
     else:
       p.addPiece(pi.pt, pi.sq)
-      if p.bd[pi.sq].isWhite:
+      if pi.pt.isWhite:
         inc w
       else:
         inc b
   p.side = black
   if w+b == pis.len:
-    b🛇[i] = p.kingCapture
-      
+    bz50[0][i] = p.isCheckmate
+  elif not illegal:
+    bz50[0][i] = p.lookup
+
+wz50[0] = newSeq[bool](pis.size)
+for i in 0..<pis.size:
+  pis.set(i)
+  var w, b = 0
+  var illegal = false
+  var p: Pos
+  for pi in pis:
+    if p.occupied(pi.sq):
+      if pi.pt.isWhite:
+        if p.bd[pi.sq].isWhite: illegal = true
+      elif p.bd[pi.sq].isBlack:
+        if pi.pt.isBlack: illegal = true
+      else:
+        p.addPiece(pi.pt, pi.sq)
+        inc b
+        dec w
+    else:
+      p.addPiece(pi.pt, pi.sq)
+      if pi.pt.isWhite:
+        inc w
+      else:
+        inc b
+  p.side = white
+  if w+b == pis.len:
+    wz50[0][i] = p.kingCapture # for pseudolegal
+  elif illegal:
+    wz50[0][i] = true
+  else:
+    wz50[0][i] = p.lookup
+
 var f = newFileStream(endgame & ".eg3", fmWrite)
 if not f.isNil:
   f.write b🛇
