@@ -11,7 +11,7 @@ import std/unicode
 #    
 #  wz50[n+1] =
 #    1 if any move leads to bz50[n]
-#    wz50[n-1] else
+#    wz50[n] else
 #    
 #  bz50[0] =
 #    1 if checkmate
@@ -30,7 +30,7 @@ import std/unicode
 #    0 else
 #
 #  only look at moves from legal positions
-  
+
 type BitSeq = object
   size: int
   s: seq[uint64]
@@ -53,7 +53,7 @@ proc `[]`(bs: BitSeq, index: int): bool =
 const endgame = "♔♖♚"
 
 type PieceIndex = object
-  pt: PieceType
+  pt: Piece
   length: int
   bits: int
   sq: Square
@@ -61,7 +61,7 @@ type PieceIndex = object
 proc pieceIndexSeq(eg: string): seq[PieceIndex] =
   for rune in eg.toRunes:
     var pi: PieceIndex
-    pi.pt = ("♚♛♜♝♞♟□♙♘♗♖♕♔".toRunes.find(rune)-6).PieceType
+    pi.pt = ("♚♛♜♝♞♟□♙♘♗♖♕♔".toRunes.find(rune)-6).Piece
     pi.length = 6
     result.add(pi)
 # optimization left for later, accept 4 times worse now
@@ -73,15 +73,15 @@ proc totalLength(pis: seq[PieceIndex]): int =
 
 var pis = pieceIndexSeq(endgame)
 proc size(pis: seq[PieceIndex]): int =
-  1 bsl pis.totalLength
+  1 shl pis.totalLength
 
 # Candidates for PDEP/PEXT
 proc depositBits(msk, source: int): int =
   var b=0
   var m=msk
   while m != 0:
-    if source.testBit(b) != 0:
-      result.setMask(mask.band -mask)
+    if source.testBit(b):
+      result.setMask(msk.and -msk)
     m.mask(m - 1)
     inc b
  
@@ -89,32 +89,48 @@ proc extractBits(msk, source: int): int =
   var b=0
   var m=msk
   while m != 0:
-    if source.band msk.band -mask != 0:
+    if 0 != source.and m.and -m:
       result.setBit b
     m.mask(m - 1)
     inc b
 
-proc setMasks(var pis: seq[PieceIndex]) =
-  var w, b
-  for pi in pis:
-    if pi.pt.isWhite:
-      w.inc 6
-    else
-      b.inc 6
+proc setMasks(pis: var seq[PieceIndex]) =
+  var w, b = 0
+  for i, pi in pis:
+    pis[i].bits = 63 shl (6*i)
     
 
 proc index(pis: seq[PieceIndex]): int =
-  for pi = in pis:
-    result += pi.mask.depositBits pi.sq
-
-proc set(var pis: seq[PieceIndex], i: int) =
   for pi in pis:
-    pi.sq = extractBits(pi.msk, i)
+    result += pi.bits.depositBits pi.sq
+
+proc set(pis: var seq[PieceIndex], i: int) =
+  for i, pi in pis:
+    pis[i].sq = extractBits(pi.bits, i)
+    
 
 var b🛇 = newBitSeq(pis.size)
 for i in 0..<pis.size:
-  pi.set(i)
-  
+  pis.set(i)
+  var w, b = 0
+  var p: Pos
+  for pi in pis:
+    if p.occupied(pi.sq):
+      if pi.pt.isBlack: discard
+      elif p.bd[pi.sq].isWhite: discard
+      else:
+        p.addPiece(pi.pt, pi.sq)
+        inc w
+    else:
+      p.addPiece(pi.pt, pi.sq)
+      if p.bd[pi.sq].isWhite:
+        inc w
+      else:
+        inc b
+  p.side = black
+  if w+b == pis.len:
+    b🛇[i] = p.kingCapture
+      
 var f = newFileStream(endgame & ".eg3", fmWrite)
 if not f.isNil:
   f.write b🛇

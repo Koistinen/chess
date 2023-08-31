@@ -15,10 +15,12 @@ proc sq2str* (sq: int): string =
 # -6..6: ♚♛♜♝♞♟□♙♘♗♖♕♔
 type Piece* = enum
   ♚ = -6, ♛, ♜, ♝, ♞, ♟, □, ♙, ♘, ♗, ♖, ♕, ♔
+proc isBlack*(pt: Piece): bool = pt < □
+proc isWhite*(pt: Piece): bool = pt > □
 type Side* = 0..1
 const white* = 0
 const black* = 1
-type Square = 0..63
+type Square* = 0..63
 type Pos* = object
   bd*: array[Square, Piece]
   g50: int
