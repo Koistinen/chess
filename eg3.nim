@@ -96,8 +96,8 @@ var b🛇 = newSeq[bool](pis.size)
 for i in 0..<pis.size:
   pis.set(i)
   var captured = 0
-  var p: Pos
   var illegal = false
+  var p: Pos
   # place white pieces
   for pi in pis:
     if pi.pt.isWhite:
@@ -120,60 +120,51 @@ var wz50 = newSeq[seq[bool]](101)
 bz50[0] = newSeq[bool](pis.size)
 for i in 0..<pis.size:
   pis.set(i)
-  var w, b = 0
+  var captured = 0
   var illegal = false
   var p: Pos
+  # place white pieces
   for pi in pis:
-    if p.occupied(pi.sq):
-      if pi.pt.isBlack:
-        if p.bd[pi.sq].isBlack: illegal = true
-      elif p.bd[pi.sq] == ♚: illegal = true
-      elif p.bd[pi.sq].isWhite:
-        if pi.pt.isWhite: illegal = true
-      else:
-        p.addPiece(pi.pt, pi.sq)
-        inc w
-    else:
-      p.addPiece(pi.pt, pi.sq)
-      if pi.pt.isWhite:
-        inc w
-      else:
-        inc b
+    if pi.pt.isWhite:
+      if p.occupied(pi.sq): illegal = true
+      else: p.addPiece(pi.pt, pi.sq)
+  # place black pieces
+  for pi in pis:
+    if pi.pt.isBlack:
+      if p.occupied(pi.sq):
+        if pi.pt = ♚: illegal = true
+        else: inc captured
+      else: p.addPiece(pi.pt, pi.sq)
   p.side = black
-  if w+b == pis.len:
-    bz50[0][i] = p.isCheckmate
-  elif not illegal:
-    bz50[0][i] = p.lookup
+  bz50[0][i] =
+    if illegal: false
+    elif captured == 0: p.isCheckmate
+    elif captured == 1: p.lookup
+    else: false
 
 wz50[0] = newSeq[bool](pis.size)
 for i in 0..<pis.size:
-  pis.set(i)
-  var w, b = 0
+  var captured = 0
   var illegal = false
   var p: Pos
+  # place black pieces
   for pi in pis:
-    if p.occupied(pi.sq):
-      if pi.pt.isWhite:
-        if p.bd[pi.sq].isWhite: illegal = true
-      elif p.bd[pi.sq].isBlack:
-        if pi.pt.isBlack: illegal = true
-      else:
-        p.addPiece(pi.pt, pi.sq)
-        inc b
-        dec w
-    else:
-      p.addPiece(pi.pt, pi.sq)
-      if pi.pt.isWhite:
-        inc w
-      else:
-        inc b
+    if pi.pt.isBlack:
+      if p.occupied(pi.sq): illegal = true
+      else: p.addPiece(pi.pt, pi.sq)
+  # place white pieces
+  for pi in pis:
+    if pi.pt.isWhite:
+      if p.occupied(pi.sq):
+        if pi.pt = ♔: illegal = true
+        else: inc captured
+      else: p.addPiece(pi.pt, pi.sq)
   p.side = white
-  if w+b == pis.len:
-    wz50[0][i] = p.kingCapture # for pseudolegal
-  elif illegal:
-    wz50[0][i] = true
-  else:
-    wz50[0][i] = p.lookup
+  wz50[0][i] =
+    if illegal: true
+    elif captured == 0: p.kingCapture
+    elif captured == 1: p.lookup
+    else: true
 
 var f = newFileStream(endgame & ".eg3", fmWrite)
 if not f.isNil:
