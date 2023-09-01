@@ -76,10 +76,13 @@ proc extractBits(msk, source: int): int =
     inc b
 
 proc setMasks(pis: var seq[PieceIndex]) =
-  var w, b = 0
-  for i, pi in pis:
-    pis[i].bits = 63 shl (6*i)
-    
+  # same order of bits independent of order of pis
+  var k = 0
+  for pt in Piece:
+    for i, pi in pis:
+      if pi.pt == pt:
+        pis[i].bits = 63 shl (6*k)
+        inc k
 
 proc index(pis: seq[PieceIndex]): int =
   for pi in pis:
@@ -92,24 +95,21 @@ proc set(pis: var seq[PieceIndex], i: int) =
 var b🛇 = newSeq[bool](pis.size)
 for i in 0..<pis.size:
   pis.set(i)
-  var w, b = 0
+  var captured = 0
   var p: Pos
+  var illegal = false
+  # place white pieces
   for pi in pis:
-    var illegal = false
-    if p.occupied(pi.sq):
-      if pi.pt.isBlack: discard
-      elif p.bd[pi.sq].isWhite: discard
-      elif p.bd[pi.sq] == ♚: illegal = true
-      else:
-        p.addPiece(pi.pt, pi.sq)
-        inc w
-        dec b
-    else:
-      p.addPiece(pi.pt, pi.sq)
-      if pi.pt.isWhite:
-        inc w
-      else:
-        inc b
+    if pi.pt.isWhite:
+      if p.occupied(pi.sq): illegal = true
+      else: p.addPiece(pi.pt, pi.sq)
+  # place black pieces
+  for pi in pis:
+    if pi.pt.isBlack:
+      if p.occupied(pi.sq):
+        if pi.pt = ♚: illegal = true
+        else: inc captured
+      else: p.addPiece(pi.pt, pi.sq)
   p.side = black
   if not illegal:
     illegal = p.kingCapture
