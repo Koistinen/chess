@@ -250,6 +250,9 @@ for ply in 1..100:
 var f = newFileStream(endgame & ".eg3", fmWrite)
 if not f.isNil:
   f.write b🛇
+  for ply in 0..100:
+    f.write bz50[ply]
+    f.write wz50[ply]
 else:
   echo "Error creating file."
 f.flush
