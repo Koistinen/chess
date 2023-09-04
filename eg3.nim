@@ -100,12 +100,12 @@ proc index(p: Pos): int =
   result = pis.index
     
 proc set(pis: var seq[PieceIndex], i: int) =
-  echo "i = ", i
+#  echo "i = ", i
 
   for k, pi in pis:
     pis[k].sq = extractBits(pi.bits, i)
     let pieceRunes = "♚♛♜♝♞♟□♙♘♗♖♕♔".toRunes
-    echo pieceRunes[pi.pt.int+6], pis[k].sq.sq2str, pi.bits
+#    echo pieceRunes[pi.pt.int+6], pis[k].sq.sq2str, pi.bits
 
 # fake lookup, works for ♔♕♚ and ♔♖♚
 proc lookup(p: Pos): bool =
@@ -133,7 +133,7 @@ for i in 0..<pis.size:
         else: inc captured
       else: p.addPiece(pi.pt, pi.sq)
   p.side = black
-  echo p
+#  echo p
   if not illegal:
     illegal = p.kingCapture
   b🛇[i] = illegal
