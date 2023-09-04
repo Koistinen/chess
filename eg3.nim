@@ -209,7 +209,7 @@ for ply in 1..100:
         for mv in moves:
           var p2 = p
           p2.makeMove mv
-          if not bz50[ply-1][p2.index]:
+          if not wz50[ply-1][p2.index]:
             loss = false
         if moves.len == 0:
           loss = false
@@ -235,10 +235,17 @@ for ply in 1..100:
         else: p.addPiece(pi.pt, pi.sq)
     p.side = white
     wz50[ply][i] =
-      if illegal: true
+      if illegal: false
       elif captured == 0: p.kingCapture
-      elif captured == 1: p.lookup
-      else: true
+        var moves = p.genLegalMoves
+        var win = false
+        for mv in moves:
+          var p2 = p
+          p2.makeMove mv
+          if bz50[ply-1][p2.index]:
+            win = true
+        win
+      else: false
   
 var f = newFileStream(endgame & ".eg3", fmWrite)
 if not f.isNil:
