@@ -278,4 +278,10 @@ else:
   echo "Error creating file."
 f.flush
 
+# output statistics
+for ply in 0..100:
+  if ply > 0:
+    echo bCount[ply], wCount[ply]-wCount[ply-1]
+  else:
+    echo bCount[ply]
 # ♚, ♛, ♜, ♝, ♞, ♟, □, ♙, ♘, ♗, ♖, ♕ , ♔
