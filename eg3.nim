@@ -220,14 +220,16 @@ for ply in 1..100:
       elif captured == 0:
         var moves = p.genLegalMoves
         var loss = true
+        var newLoss = false
         for mv in moves:
           var p2 = p
           p2.makeMove mv
-          if not wz50[ply-1][p2.index]:
-            loss = false
+          if not wz50[ply-1][p2.index]: loss = false
+          elif ply == 1: newLoss = true
+          elif not wz50[ply-2][p2.index]: newLoss = true
         if moves.len == 0:
           loss = false
-        loss
+        loss and newLoss
       else: false
 
   wz50[ply] = newSeq[bool](pis.size)
