@@ -48,6 +48,7 @@ proc castlingString(p: Pos): string =
   if 0 == result.len: result = "-"
 
 const fenPc*: array[-6..6, char] = ['k','q','r','b','n','p',' ','P','N','B','R','Q','K']
+
 proc pieceChar(p: Pos, sq: int): char =
   fenPc[p.bd[sq].int]
 
@@ -87,7 +88,7 @@ proc p2fen*(p: Pos): string =
       else:
         if empty > 0: result.add($empty)
         empty = 0
-        result.add(fenPc[p.bd[square(file,rank)].int])
+        result.add(p.pieceChar(square(file,rank)))
     if empty > 0: result.add($empty)
     if 0 < rank:
       result.add('/')
