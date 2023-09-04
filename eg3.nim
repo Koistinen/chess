@@ -165,10 +165,15 @@ for i in 0..<pis.size:
   p.side = black
   bz50[0][i] =
     if illegal: false
-    elif captured == 0: p.isCheckmate
+    elif captured == 0:
+      inc bCount[0]
+      if p.isCheckmate:
+        inc bCount[0]
+        true
+      else: false
     elif captured == 1: p.lookup
     else: false
-  if bz50[0][i]: inc bCount[0]
+
 
 wz50[0] = newSeq[bool](pis.size)
 for i in 0..<pis.size:
