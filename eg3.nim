@@ -235,6 +235,7 @@ for ply in 1..100:
         if moves.len == 0: loss = false
         loss and newLoss
       else: false
+    if bz50[ply][i]: inc bCount[ply]
 
   wz50[ply] = newSeq[bool](pis.size)
   for i in 0..<pis.size:
@@ -265,6 +266,7 @@ for ply in 1..100:
           if bz50[ply-1][p2.index]: win = true
         win or wz50[ply-1][i]
       else: wz50[ply-1][i]
+    if wz50[ply][i]: inc wCount[ply]
   
 var f = newFileStream(endgame & ".eg3", fmWrite)
 if not f.isNil:
@@ -275,4 +277,5 @@ if not f.isNil:
 else:
   echo "Error creating file."
 f.flush
+
 # ♚, ♛, ♜, ♝, ♞, ♟, □, ♙, ♘, ♗, ♖, ♕ , ♔
