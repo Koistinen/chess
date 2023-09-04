@@ -236,7 +236,7 @@ for ply in 1..100:
     p.side = white
     wz50[ply][i] =
       if illegal: false
-      elif captured == 0: p.kingCapture
+      elif captured == 0:
         var moves = p.genLegalMoves
         var win = false
         for mv in moves:
