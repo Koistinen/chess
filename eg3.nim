@@ -130,8 +130,15 @@ for i in 0..<pis.size:
   if not illegal:
     illegal = p.kingCapture
   b🛇[i] = illegal
-    
+  
+# bz50 has only lowest possible ply set true if loss
+# false for illegal
+# true at ply = 0 if single black piece captured and loss
 var bz50 = newSeq[seq[bool]](101)
+
+# wz50 has all possible ply set true if win
+# true for illegal
+# false if single white piece captured and not win
 var wz50 = newSeq[seq[bool]](101)
 bz50[0] = newSeq[bool](pis.size)
 for i in 0..<pis.size:
