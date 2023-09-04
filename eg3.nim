@@ -98,14 +98,17 @@ proc index(p: Pos): int =
       pis.add pi
   setMasks(pis)
   result = pis.index
-    
-proc set(pis: var seq[PieceIndex], i: int) =
-#  echo "i = ", i
 
+proc pis2str(pis: seq[PieceIndex]): string =
+  let pieceRunes = "♚♛♜♝♞♟□♙♘♗♖♕♔".toRunes
+  for pi in pis:
+    result.add pieceRunes[pi.pt.int+6]
+    result.add pi.sq.sq2str
+    result.add ' '
+
+proc set(pis: var seq[PieceIndex], i: int) =
   for k, pi in pis:
     pis[k].sq = extractBits(pi.bits, i)
-    let pieceRunes = "♚♛♜♝♞♟□♙♘♗♖♕♔".toRunes
-#    echo pieceRunes[pi.pt.int+6], pis[k].sq.sq2str, pi.bits
 
 # fake lookup, works for ♔♕♚ and ♔♖♚
 proc lookup(p: Pos): bool =
