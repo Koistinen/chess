@@ -227,8 +227,7 @@ for ply in 1..100:
           if not wz50[ply-1][p2.index]: loss = false
           elif ply == 1: newLoss = true
           elif not wz50[ply-2][p2.index]: newLoss = true
-        if moves.len == 0:
-          loss = false
+        if moves.len == 0: loss = false
         loss and newLoss
       else: false
 
@@ -258,9 +257,8 @@ for ply in 1..100:
         for mv in moves:
           var p2 = p
           p2.makeMove mv
-          if bz50[ply-1][p2.index]:
-            win = true
-        win
+          if bz50[ply-1][p2.index]: win = true
+        win or wz50[ply-1][i]
       else: wz50[ply-1][i]
   
 var f = newFileStream(endgame & ".eg3", fmWrite)
