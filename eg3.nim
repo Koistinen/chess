@@ -224,7 +224,7 @@ for ply in 1..100:
           loss = false
         loss
       else: false
-  
+
   wz50[ply] = newSeq[bool](pis.size)
   for i in 0..<pis.size:
     var captured = 0
@@ -244,17 +244,17 @@ for ply in 1..100:
         else: p.addPiece(pi.pt, pi.sq)
     p.side = white
     wz50[ply][i] =
-      if illegal: false
+      if illegal: true
       elif captured == 0:
         var moves = p.genLegalMoves
-        var win = false
+        var win = wz50[ply-1][i]
         for mv in moves:
           var p2 = p
           p2.makeMove mv
           if bz50[ply-1][p2.index]:
             win = true
         win
-      else: false
+      else: wz50[ply-1][i]
   
 var f = newFileStream(endgame & ".eg3", fmWrite)
 if not f.isNil:
