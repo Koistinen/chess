@@ -104,7 +104,7 @@ proc set(pis: var seq[PieceIndex], i: int) =
     pis[i].sq = extractBits(pi.bits, i)
 
 proc lookup(p: Pos): bool =
-  false # fake lookup
+  false # fake lookup, works for ♔♕♚ and ♔♖♚
 
 var b🛇 = newSeq[bool](pis.size)
 for i in 0..<pis.size:
@@ -177,7 +177,7 @@ for i in 0..<pis.size:
   wz50[0][i] =
     if illegal: true
     elif captured == 0: p.kingCapture
-    elif captured == 1: p.lookup
+    elif captured == 1: p.kingCapture or p.lookup
     else: true
 
 for ply in 1..100:
