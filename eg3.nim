@@ -140,6 +140,10 @@ var bz50 = newSeq[seq[bool]](101)
 # true for illegal
 # false if single white piece captured and not win
 var wz50 = newSeq[seq[bool]](101)
+
+var wCount: array[0..100, int]
+var bCount: array[0..100, int]
+
 bz50[0] = newSeq[bool](pis.size)
 for i in 0..<pis.size:
   pis.set(i)
@@ -164,6 +168,7 @@ for i in 0..<pis.size:
     elif captured == 0: p.isCheckmate
     elif captured == 1: p.lookup
     else: false
+  if bz50[0][i]: inc bCount[0]
 
 wz50[0] = newSeq[bool](pis.size)
 for i in 0..<pis.size:
