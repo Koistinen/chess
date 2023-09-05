@@ -207,7 +207,7 @@ for i in 0..<pis.size:
     elif captured == 1: p.lookup
     else: true
 
-for ply in 1..100:
+for ply in 1..25:
   bz50[ply] = newSeq[bool](pis.size)
   for i in 0..<pis.size:
     pis.set(i)
