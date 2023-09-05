@@ -176,14 +176,12 @@ for i in 0..<pis.size:
   bz50[0][i] =
     if illegal: false
     elif captured == 0:
-      inc bCount[0]
       if p.isCheckmate:
         inc bCount[0]
         true
       else: false
     elif captured == 1: p.lookup
     else: false
-
 
 wz50[0] = newSeq[bool](pis.size)
 for i in 0..<pis.size:
