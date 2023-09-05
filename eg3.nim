@@ -117,6 +117,8 @@ proc lookup(p: Pos): bool =
 
 pis.setMasks
 
+echo startingPos().pos2term
+
 var b🛇 = newSeq[bool](pis.size)
 for i in 0..<pis.size:
   pis.set(i)
@@ -294,3 +296,4 @@ for ply in 0..100:
   else:
     echo bCount[ply]
 # ♚, ♛, ♜, ♝, ♞, ♟, □, ♙, ♘, ♗, ♖, ♕ , ♔
+

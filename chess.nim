@@ -1,5 +1,6 @@
 # Copyright 2022-2023 Urban Koistinen - GNU Affero
 import strutils
+import std/unicode except split
 #import std/bitops
 
 proc square*(file, rank: int): int = file+8*rank
@@ -51,6 +52,19 @@ const fenPc*: array[-6..6, char] = ['k','q','r','b','n','p',' ','P','N','B','R',
 
 proc pieceChar(p: Pos, sq: int): char =
   fenPc[p.bd[sq].int]
+
+proc pos2term*(p: Pos): string =
+  for rank in countdown(7, 0):
+    for file in 0..7:
+      result.add(
+        if 0 == (rank+file) mod 2: "\e[47m"
+        else: "\e[49m")
+      result.add ' '
+      result.add(
+        "♚♛♜♝♞♟ ♙♘♗♖♕♔".toRunes[
+          6 + p.bd[square(file, rank)].int])
+      result.add ' '
+    result.add "\e[49m\n"
 
 proc `$`*(p: Pos): string =
   for rank in countdown(7,0):
