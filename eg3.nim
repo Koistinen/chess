@@ -294,6 +294,9 @@ proc compute(ply, i: int, debug=false) =
       loss and newLoss
     else: false
   if bz50[ply][i]: inc bCount[ply]
+  if bz50[ply][i]:
+    echo bCount[1]
+    echo p.pos2term
   if debug: echo "black: ", i.toOct(6)," ",bz50[ply][i]
   captured = 0
   illegal = false
