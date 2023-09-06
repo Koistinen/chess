@@ -3,6 +3,7 @@ import chess
 import streams
 import std/bitops
 import std/unicode
+import system
 
 #  bz50[n+1] =
 #    1 if every move leads to wz50[n][to_i]
@@ -106,6 +107,8 @@ proc pis2str(pis: seq[PieceIndex]): string =
     result.add pi.sq.sq2str
     result.add ' '
 
+discard pis.pis2str() # Use later?
+
 proc set(pis: var seq[PieceIndex], i: int) =
   for k, pi in pis:
     pis[k].sq = extractBits(pi.bits, i)
@@ -156,8 +159,7 @@ var wz50 = newSeq[seq[bool]](101)
 var wCount: array[0..100, int]
 var bCount: array[0..100, int]
 
-bz50[0] = newSeq[bool](pis.size)
-for i in 0..<pis.size:
+proc computeBlack0(i: int) =
   pis.set(i)
   var captured = 0
   var illegal = false
@@ -185,8 +187,21 @@ for i in 0..<pis.size:
     elif captured == 1: p.lookup
     else: false
 
-wz50[0] = newSeq[bool](pis.size)
-for i in 0..<pis.size:
+bz50[0] = newSeq[bool](pis.size)
+var f = newFileStream(endgame & ".b0", fmRead)
+if not f.isNil:
+  for i, b in bz50[0]:
+    f.read bz50[0][i]
+else:
+  for i in 0..<pis.size:
+    computeBlack0(i)
+  f = newFileStream(endgame & ".b0", fmWrite)
+  if not f.isNil:
+    for b in bz50[0]:
+      f.write b
+    f.flush
+
+proc computeWhite0(i: int, debug = false) =
   var captured = 0
   var illegal = false
   var p: Pos
@@ -209,6 +224,21 @@ for i in 0..<pis.size:
     elif captured == 1: p.lookup
     else: true
 
+wz50[0] = newSeq[bool](pis.size)
+f = newFileStream(endgame & ".w0", fmRead)
+if not f.isNil:
+  for i, b in bz50[0]:
+    f.read wz50[0][i]
+else:
+  for i in 0..<pis.size:
+    computeWhite0(i)
+  f = newFileStream(endgame & ".w0", fmWrite)
+  if not f.isNil:
+    for b in wz50[0]:
+      f.write b
+    f.flush
+
+quit()
 for ply in 1..25:
   bz50[ply] = newSeq[bool](pis.size)
   for i in 0..<pis.size:
@@ -278,7 +308,7 @@ for ply in 1..25:
       else: wz50[ply-1][i]
     if wz50[ply][i]: inc wCount[ply]
   
-var f = newFileStream(endgame & ".eg3", fmWrite)
+f = newFileStream(endgame & ".eg3", fmWrite)
 if not f.isNil:
   for ply in 0..100:
     for b in bz50[ply]:
