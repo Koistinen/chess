@@ -59,12 +59,16 @@ proc size(pis: seq[PieceIndex]): int =
   1 shl pis.totalLength
 
 # Candidates for PDEP/PEXT
-proc depositBits(msk, source: int): int =
+proc depositBits(msk, source: int, debug=false): int =
+  if debug: echo "depositBits: ", source.toOct(2)
   var b=0
   var m=msk
   while m != 0:
     if source.testBit(b):
-      result.setMask(msk.and -msk)
+      if debug: echo "depositBits: b = ", b
+      result.setMask(m.and -m)
+    if debug:
+      echo "depositBits: ", result.toOct(6)," ", m.toOct(6)
     m.mask(m - 1)
     inc b
  
@@ -86,20 +90,12 @@ proc setMasks(pis: var seq[PieceIndex]) =
         pis[i].bits = 63 shl (6*k)
         inc k
 
-proc index(pis: seq[PieceIndex]): int =
+proc index(pis: seq[PieceIndex], debug=false): int =
   for pi in pis:
-    result += pi.bits.depositBits pi.sq
+    if debug:
+      echo "index: ", pi.bits.toOct(6), ", ", pi.sq.sq2str
+    result += pi.bits.depositBits(pi.sq)
     
-proc index(p: Pos): int =
-  var pis: seq[PieceIndex]
-  for sq in 0..63:
-    if p.bd[sq] != □:
-      var pi: PieceIndex
-      pi.sq = sq
-      pi.pt = p.bd[sq]
-      pis.add pi
-  setMasks(pis)
-  result = pis.index
 
 proc pis2str(pis: seq[PieceIndex]): string =
   let pieceRunes = "♚♛♜♝♞♟□♙♘♗♖♕♔".toRunes
@@ -108,7 +104,17 @@ proc pis2str(pis: seq[PieceIndex]): string =
     result.add pi.sq.sq2str
     result.add ' '
 
-discard pis.pis2str() # Use later?
+proc index(p: Pos, debug=false): int =
+  var pis: seq[PieceIndex]
+  for sq in 0..63:
+    if p.bd[sq] != □:
+      var pi: PieceIndex
+      pi.sq = sq
+      pi.pt = p.bd[sq]
+      pis.add pi
+  setMasks(pis)
+  if debug: echo "indexing Pos: ", pis.pis2str
+  result = pis.index(true)
 
 proc set(pis: var seq[PieceIndex], i: int) =
   for k, pi in pis:
@@ -204,6 +210,7 @@ proc computeWhite0(i: int, debug = false) =
   var captured = 0
   var illegal = false
   var p: Pos
+  pis.set(i)
   # place black pieces
   for pi in pis:
     if pi.pt.isBlack:
@@ -217,6 +224,10 @@ proc computeWhite0(i: int, debug = false) =
         else: inc captured
       else: p.addPiece(pi.pt, pi.sq)
   p.side = white
+  if debug:
+    echo "computeWhite"
+    if not illegal:
+      echo p.pos2term
   wz50[0][i] =
     if illegal: true
     elif captured == 0: p.kingCapture
@@ -224,6 +235,7 @@ proc computeWhite0(i: int, debug = false) =
     else: true
 
 wz50[0] = newSeq[bool](pis.size)
+computeWhite0(0o000330, true) # debugging
 f = newFileStream(endgame & ".w0", fmRead)
 if not f.isNil:
   for i, b in bz50[0]:
@@ -268,16 +280,17 @@ proc compute(ply, i: int, debug=false) =
       for mv in moves:
         var p2 = p
         p2.makeMove mv
-        if debug: echo p2.index.toOct(6)
+        if debug: echo p2.index(true).toOct(6)
         if debug: echo p2.pos2term, wz50[ply-1][p2.index]
         if not wz50[ply-1][p2.index]: loss = false
         elif ply == 1: newLoss = true
         elif not wz50[ply-2][p2.index]: newLoss = true
       if moves.len == 0: loss = false
+      echo "compute loss and newLoss: ", loss, " ", newLoss
       loss and newLoss
     else: false
   if bz50[ply][i]: inc bCount[ply]
-  if debug: echo "black: ", bz50[ply][i]
+  if debug: echo "black: ", i.toOct(6)," ",bz50[ply][i]
   captured = 0
   illegal = false
   p = newPos(white)
