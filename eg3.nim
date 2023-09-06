@@ -271,7 +271,8 @@ proc compute(ply, i: int, debug=false) =
   if debug:
     echo pis.pis2str
     echo p.pos2term
-
+  if not illegal:
+    illegal = p.kingCapture
   bz50[ply][i] =
     # loss if one and all legal move lead to loss
     if illegal: false
@@ -344,7 +345,7 @@ else:
 f.flush
 
 # output statistics
-for ply in 0..100:
+for ply in 0..25:
   if ply > 0:
     echo bCount[ply], ", ", wCount[ply]-wCount[ply-1]
   else:
