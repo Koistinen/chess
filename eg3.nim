@@ -283,18 +283,21 @@ proc compute(ply, i: int, debug=false) =
       for mv in moves:
         var p2 = p
         p2.makeMove mv
-        if debug: echo p2.index(true).toOct(6)
-        if debug: echo p2.pos2term, wz50[ply-1][p2.index]
-        if not wz50[ply-1][p2.index]: loss = false
-        elif ply == 1: newLoss = true
-        elif not wz50[ply-2][p2.index]: newLoss = true
+        if p.isCapture(mv):
+          if not lookup(p2): loss = false
+        else:
+          if debug: echo p2.index(true).toOct(6)
+          if debug: echo p2.pos2term, wz50[ply-1][p2.index]
+          if not wz50[ply-1][p2.index]: loss = false
+          elif ply == 1: newLoss = true
+          elif not wz50[ply-2][p2.index]: newLoss = true
       if moves.len == 0: loss = false
       if debug:
         echo "compute loss and newLoss: ", loss, " ", newLoss
       loss and newLoss
     else: false
   if bz50[ply][i]: inc bCount[ply]
-  if bz50[ply][i]:
+  if ply==1 and bz50[ply][i]: # debug
     echo bCount[1]
     echo p.pos2term
   if debug: echo "black: ", i.toOct(6)," ",bz50[ply][i]
@@ -330,7 +333,7 @@ proc compute(ply, i: int, debug=false) =
 bz50[1] = newSeq[bool](pis.size)
 wz50[1] = newSeq[bool](pis.size)
 
-for ply in 1..25:
+for ply in 1..100:
   bz50[ply] = newSeq[bool](pis.size)
   wz50[ply] = newSeq[bool](pis.size)
   for i in 0..<pis.size:
@@ -348,7 +351,7 @@ else:
 f.flush
 
 # output statistics
-for ply in 0..25:
+for ply in 0..100:
   if ply > 0:
     echo bCount[ply], ", ", wCount[ply]-wCount[ply-1]
   else:
