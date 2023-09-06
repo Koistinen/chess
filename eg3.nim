@@ -114,7 +114,7 @@ proc index(p: Pos, debug=false): int =
       pis.add pi
   setMasks(pis)
   if debug: echo "indexing Pos: ", pis.pis2str
-  result = pis.index(true)
+  result = pis.index(debug)
 
 proc set(pis: var seq[PieceIndex], i: int) =
   for k, pi in pis:
@@ -235,7 +235,6 @@ proc computeWhite0(i: int, debug = false) =
     else: true
 
 wz50[0] = newSeq[bool](pis.size)
-computeWhite0(0o000330, true) # debugging
 f = newFileStream(endgame & ".w0", fmRead)
 if not f.isNil:
   for i, b in bz50[0]:
@@ -286,7 +285,8 @@ proc compute(ply, i: int, debug=false) =
         elif ply == 1: newLoss = true
         elif not wz50[ply-2][p2.index]: newLoss = true
       if moves.len == 0: loss = false
-      echo "compute loss and newLoss: ", loss, " ", newLoss
+      if debug:
+        echo "compute loss and newLoss: ", loss, " ", newLoss
       loss and newLoss
     else: false
   if bz50[ply][i]: inc bCount[ply]
@@ -322,14 +322,12 @@ proc compute(ply, i: int, debug=false) =
 
 bz50[1] = newSeq[bool](pis.size)
 wz50[1] = newSeq[bool](pis.size)
-compute(1, 3*64+16, true)
-quit()
 
 for ply in 1..25:
   bz50[ply] = newSeq[bool](pis.size)
   wz50[ply] = newSeq[bool](pis.size)
   for i in 0..<pis.size:
-    compute(ply, i)
+    compute(ply, i, false)
   
 f = newFileStream(endgame & ".eg3", fmWrite)
 if not f.isNil:
