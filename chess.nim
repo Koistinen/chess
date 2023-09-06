@@ -28,6 +28,7 @@ type Pos* = object
   side*: int
   ep: int
   castling: int
+proc newPos*(side=white): Pos = result.side = side
 
 proc startingPos*: Pos =
   result.bd = [

@@ -4,6 +4,7 @@ import streams
 import std/bitops
 import std/unicode
 import system
+import std/strutils
 
 #  bz50[n+1] =
 #    1 if every move leads to wz50[n][to_i]
@@ -119,8 +120,6 @@ proc lookup(p: Pos): bool =
   else: false
 
 pis.setMasks
-
-echo startingPos().pos2term
 
 var b🛇 = newSeq[bool](pis.size)
 for i in 0..<pis.size:
@@ -238,75 +237,86 @@ else:
       f.write b
     f.flush
 
+proc compute(ply, i: int, debug=false) =
+  pis.set(i)
+  var captured = 0
+  var illegal = false
+  var p = newPos(black)
+  # place white pieces
+  for pi in pis:
+    if pi.pt.isWhite:
+      if p.occupied(pi.sq): illegal = true
+      else: p.addPiece(pi.pt, pi.sq)
+  # place black pieces
+  for pi in pis:
+    if pi.pt.isBlack:
+      if p.occupied(pi.sq):
+        if pi.pt == ♚: illegal = true
+        else: inc captured
+      else: p.addPiece(pi.pt, pi.sq)
+  if debug:
+    echo pis.pis2str
+    echo p.pos2term
+
+  bz50[ply][i] =
+    # loss if one and all legal move lead to loss
+    if illegal: false
+    elif captured == 0:
+      var moves = p.genLegalMoves
+      var loss = true
+      var newLoss = false
+      for mv in moves:
+        var p2 = p
+        p2.makeMove mv
+        if debug: echo p2.index.toOct(6)
+        if debug: echo p2.pos2term, wz50[ply-1][p2.index]
+        if not wz50[ply-1][p2.index]: loss = false
+        elif ply == 1: newLoss = true
+        elif not wz50[ply-2][p2.index]: newLoss = true
+      if moves.len == 0: loss = false
+      loss and newLoss
+    else: false
+  if bz50[ply][i]: inc bCount[ply]
+  if debug: echo "black: ", bz50[ply][i]
+  captured = 0
+  illegal = false
+  p = newPos(white)
+  # place black pieces
+  for pi in pis:
+    if pi.pt.isBlack:
+      if p.occupied(pi.sq): illegal = true
+      else: p.addPiece(pi.pt, pi.sq)
+  # place white pieces
+  for pi in pis:
+    if pi.pt.isWhite:
+      if p.occupied(pi.sq):
+        if pi.pt == ♔: illegal = true
+        else: inc captured
+      else: p.addPiece(pi.pt, pi.sq)
+  p.side = white
+  wz50[ply][i] =
+    if illegal: true
+    elif captured == 0:
+      var moves = p.genLegalMoves
+      var win = wz50[ply-1][i]
+      for mv in moves:
+        var p2 = p
+        p2.makeMove mv
+        if bz50[ply-1][p2.index]: win = true
+      win or wz50[ply-1][i]
+    else: wz50[ply-1][i]
+  if wz50[ply][i]: inc wCount[ply]
+
+bz50[1] = newSeq[bool](pis.size)
+wz50[1] = newSeq[bool](pis.size)
+compute(1, 3*64+16, true)
 quit()
+
 for ply in 1..25:
   bz50[ply] = newSeq[bool](pis.size)
-  for i in 0..<pis.size:
-    pis.set(i)
-    var captured = 0
-    var illegal = false
-    var p: Pos
-    # place white pieces
-    for pi in pis:
-      if pi.pt.isWhite:
-        if p.occupied(pi.sq): illegal = true
-        else: p.addPiece(pi.pt, pi.sq)
-    # place black pieces
-    for pi in pis:
-      if pi.pt.isBlack:
-        if p.occupied(pi.sq):
-          if pi.pt == ♚: illegal = true
-          else: inc captured
-        else: p.addPiece(pi.pt, pi.sq)
-    p.side = black
-    bz50[ply][i] =
-      # loss if one and all legal move lead to loss
-      if illegal: false
-      elif captured == 0:
-        var moves = p.genLegalMoves
-        var loss = true
-        var newLoss = false
-        for mv in moves:
-          var p2 = p
-          p2.makeMove mv
-          if not wz50[ply-1][p2.index]: loss = false
-          elif ply == 1: newLoss = true
-          elif not wz50[ply-2][p2.index]: newLoss = true
-        if moves.len == 0: loss = false
-        loss and newLoss
-      else: false
-    if bz50[ply][i]: inc bCount[ply]
-
   wz50[ply] = newSeq[bool](pis.size)
   for i in 0..<pis.size:
-    var captured = 0
-    var illegal = false
-    var p: Pos
-    # place black pieces
-    for pi in pis:
-      if pi.pt.isBlack:
-        if p.occupied(pi.sq): illegal = true
-        else: p.addPiece(pi.pt, pi.sq)
-    # place white pieces
-    for pi in pis:
-      if pi.pt.isWhite:
-        if p.occupied(pi.sq):
-          if pi.pt == ♔: illegal = true
-          else: inc captured
-        else: p.addPiece(pi.pt, pi.sq)
-    p.side = white
-    wz50[ply][i] =
-      if illegal: true
-      elif captured == 0:
-        var moves = p.genLegalMoves
-        var win = wz50[ply-1][i]
-        for mv in moves:
-          var p2 = p
-          p2.makeMove mv
-          if bz50[ply-1][p2.index]: win = true
-        win or wz50[ply-1][i]
-      else: wz50[ply-1][i]
-    if wz50[ply][i]: inc wCount[ply]
+    compute(ply, i)
   
 f = newFileStream(endgame & ".eg3", fmWrite)
 if not f.isNil:
