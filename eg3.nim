@@ -184,9 +184,12 @@ proc computeBlack0(i: int) =
   p.side = black
   bz50[0][i] =
     if illegal: false
+    elif p.kingCapture: false
     elif captured == 0:
       if p.isCheckmate:
         inc bCount[0]
+        echo bCount[0]
+        echo p.pos2term
         true
       else: false
     elif captured == 1: p.lookup
