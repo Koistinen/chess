@@ -47,8 +47,6 @@ proc pieceIndexSeq(eg: string): seq[PieceIndex] =
     pi.pt = ("♚♛♜♝♞♟□♙♘♗♖♕♔".toRunes.find(rune)-6).Piece
     pi.length = 6
     result.add(pi)
-# optimization left for later, accept 4 times worse now
-#  result[0].length = 4
 
 proc totalLength(pis: seq[PieceIndex]): int =
   for pi in pis:
@@ -174,6 +172,7 @@ proc computeBlack0(i: int) =
     elif captured == 1: p.lookup
     else: false
 
+echo "Computing black at ply=0"
 bz50[0] = newSeq[bool](pis.size)
 for i in 0..<pis.size:
   computeBlack0(i)
@@ -206,6 +205,7 @@ proc computeWhite0(i: int, debug = false) =
     elif captured == 1: p.lookup
     else: true
 
+echo "Computing white at ply=0"
 wz50[0] = newSeq[bool](pis.size)
 for i in 0..<pis.size:
   computeWhite0(i)
@@ -289,25 +289,41 @@ proc compute(ply, i: int, debug=false) =
     else: wz50[ply-1][i]
   if wz50[ply][i]: inc wCount[ply]
 
-bz50[1] = newSeq[bool](pis.size)
-wz50[1] = newSeq[bool](pis.size)
-
 for ply in 1..100:
+  echo "Computing at ply=", ply
   bz50[ply] = newSeq[bool](pis.size)
   wz50[ply] = newSeq[bool](pis.size)
   for i in 0..<pis.size:
     compute(ply, i, false)
+  echo wCount[ply]-wCount[ply-1], " new white wins found."
   
-var f = newFileStream(endgame & ".eg3", fmWrite)
-if not f.isNil:
-  for ply in 0..100:
-    for b in bz50[ply]:
-      f.write b
-    for b in wz50[ply]:
-      f.write b
+var fz50 = newFileStream(endgame & ".eg3z50", fmWrite)
+var fwin = newFileStream(endgame & ".eg3win", fmWrite)
+if not fz50.isNil and not fwin.isNil:
+  var byteBuff: uint8
+  for i in 0..<pis.size:
+    var z50 = 101
+    for ply in 0..100:
+      if wz50[ply][i]:
+        z50 = ply
+        break
+    fz50.write z50.uint8
+  for i in 0..<pis.size:
+    var z50 = 101
+    for ply in 0..100:
+      if bz50[ply][i]:
+        z50 = ply
+        break
+    fwin.write z50.uint8
+    byteBuff = byteBuff shl 1
+    if z50 != 101: # white win?
+      inc byteBuff
+    if 7 == (i mod 8):
+      fwin.write byteBuff
+  fz50.flush
+  fwin.flush
 else:
-  echo "Error creating file."
-f.flush
+  echo "Error creating files."
 
 # output statistics
 for ply in 0..100:
