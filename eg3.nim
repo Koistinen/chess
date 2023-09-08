@@ -126,39 +126,18 @@ proc lookup(p: Pos): bool =
   else: false
 
 pis.setMasks
-
-var b🛇 = newSeq[bool](pis.size)
-for i in 0..<pis.size:
-  pis.set(i)
-  var captured = 0
-  var illegal = false
-  var p: Pos
-  # place white pieces
-  for pi in pis:
-    if pi.pt.isWhite:
-      if p.occupied(pi.sq): illegal = true
-      else: p.addPiece(pi.pt, pi.sq)
-  # place black pieces
-  for pi in pis:
-    if pi.pt.isBlack:
-      if p.occupied(pi.sq):
-        if pi.pt == ♚: illegal = true
-        else: inc captured
-      else: p.addPiece(pi.pt, pi.sq)
-  p.side = black
-#  echo p
-  if not illegal:
-    illegal = p.kingCapture
-  b🛇[i] = illegal
   
 # bz50 has only lowest possible ply set true if loss
 # false for illegal
 # true at ply = 0 if single black piece captured and loss
+
 var bz50 = newSeq[seq[bool]](101)
 
 # wz50 has all possible ply set true if win
 # true for illegal
 # false if single white piece captured and not win
+# true if true at lower ply
+
 var wz50 = newSeq[seq[bool]](101)
 
 var wCount: array[0..100, int]
@@ -196,18 +175,8 @@ proc computeBlack0(i: int) =
     else: false
 
 bz50[0] = newSeq[bool](pis.size)
-var f = newFileStream(endgame & ".b0", fmRead)
-if not f.isNil:
-  for i, b in bz50[0]:
-    f.read bz50[0][i]
-else:
-  for i in 0..<pis.size:
-    computeBlack0(i)
-  f = newFileStream(endgame & ".b0", fmWrite)
-  if not f.isNil:
-    for b in bz50[0]:
-      f.write b
-    f.flush
+for i in 0..<pis.size:
+  computeBlack0(i)
 
 proc computeWhite0(i: int, debug = false) =
   var captured = 0
@@ -238,18 +207,8 @@ proc computeWhite0(i: int, debug = false) =
     else: true
 
 wz50[0] = newSeq[bool](pis.size)
-f = newFileStream(endgame & ".w0", fmRead)
-if not f.isNil:
-  for i, b in bz50[0]:
-    f.read wz50[0][i]
-else:
-  for i in 0..<pis.size:
-    computeWhite0(i)
-  f = newFileStream(endgame & ".w0", fmWrite)
-  if not f.isNil:
-    for b in wz50[0]:
-      f.write b
-    f.flush
+for i in 0..<pis.size:
+  computeWhite0(i)
 
 proc compute(ply, i: int, debug=false) =
   pis.set(i)
@@ -339,7 +298,7 @@ for ply in 1..100:
   for i in 0..<pis.size:
     compute(ply, i, false)
   
-f = newFileStream(endgame & ".eg3", fmWrite)
+var f = newFileStream(endgame & ".eg3", fmWrite)
 if not f.isNil:
   for ply in 0..100:
     for b in bz50[ply]:
