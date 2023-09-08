@@ -314,7 +314,7 @@ if not fz50.isNil and not fwin.isNil:
       if bz50[ply][i]:
         z50 = ply
         break
-    fwin.write z50.uint8
+    fz50.write z50.uint8
     byteBuff = byteBuff shl 1
     if z50 != 101: # white win?
       inc byteBuff
