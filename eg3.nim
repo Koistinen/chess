@@ -296,34 +296,44 @@ for ply in 1..100:
   for i in 0..<pis.size:
     compute(ply, i, false)
   echo wCount[ply]-wCount[ply-1], " new white wins found."
-  
-var fz50 = newFileStream(endgame & ".eg3z50", fmWrite)
-var fwin = newFileStream(endgame & ".eg3win", fmWrite)
-if not fz50.isNil and not fwin.isNil:
+
+# www meaning White Win With
+var fz50b = newFileStream(endgame & ".z50b", fmWrite)
+var fwwwb = newFileStream(endgame & ".wwwb", fmWrite)
+var fz50w = newFileStream(endgame & ".z50w", fmWrite)
+var fwwww = newFileStream(endgame & ".wwww", fmWrite)
+if fz50b.isNil or fwwwb.isNil or fz50w.isNil or fwwww.isNil:
+  echo "Error creating files."
+else:
   var byteBuff: uint8
-  for i in 0..<pis.size:
-    var z50 = 101
-    for ply in 0..100:
-      if wz50[ply][i]:
-        z50 = ply
-        break
-    fz50.write z50.uint8
   for i in 0..<pis.size:
     var z50 = 101
     for ply in 0..100:
       if bz50[ply][i]:
         z50 = ply
         break
-    fz50.write z50.uint8
+    fz50b.write z50.uint8
     byteBuff = byteBuff shl 1
     if z50 != 101: # white win?
       inc byteBuff
     if 7 == (i mod 8):
-      fwin.write byteBuff
-  fz50.flush
-  fwin.flush
-else:
-  echo "Error creating files."
+      fwwwb.write byteBuff
+  for i in 0..<pis.size:
+    var z50 = 101
+    for ply in 0..100:
+      if wz50[ply][i]:
+        z50 = ply
+        break
+    fz50w.write z50.uint8
+    byteBuff = byteBuff shl 1
+    if z50 != 101: # white win?
+      inc byteBuff
+    if 7 == (i mod 8):
+      fwwww.write byteBuff
+  fz50b.flush
+  fwwwb.flush
+  fz50w.flush
+  fwwww.flush
 
 # output statistics
 for ply in 0..100:
