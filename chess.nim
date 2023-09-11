@@ -6,7 +6,7 @@ import std/unicode except split
 proc square*(file, rank: int): int = file+8*rank
 proc file2ch(file: int): char = "abcdefgh"[file]
 proc rank2ch(rank:int): char = "12345678"[rank]
-proc str2sq(s: string): int = square(s[0].ord-'a'.ord,s[1].ord-'1'.ord)
+proc str2sq*(s: string): int = square(s[0].ord-'a'.ord,s[1].ord-'1'.ord)
 proc sq2file(sq: int): int = 7 and sq
 proc sq2rank(sq: int): int = sq shr 3
 proc sq2str* (sq: int): string =
