@@ -1,5 +1,5 @@
 TODO LIST
 
-* Position type
-* Move type
-* makeMove and move generators
+* probe to query tablebase
+* some example code which uses probe, say to play a game from a given position.
+
