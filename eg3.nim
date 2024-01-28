@@ -240,8 +240,7 @@ proc compute(ply, i: int, debug=false) =
     echo pis.pis2str
     echo p.pos2term
   if not illegal:
-    if ♔Check[i] != p.kingCapture: echo "Check error at ", p.pos2term
-    illegal = p.kingCapture
+    illegal = ♔Check[i]
   bz50[ply][i] =
     # loss if one and all legal move lead to loss
     if illegal: false
