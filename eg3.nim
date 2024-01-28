@@ -141,6 +141,9 @@ var wz50 = newSeq[seq[bool]](101)
 var wCount: array[0..100, int]
 var bCount: array[0..100, int]
 
+var ♔Check = newSeq[bool](pis.size)
+var ♚Check = newSeq[bool](pis.size)
+
 proc computeBlack0(i: int) =
   pis.set(i)
   var captured = 0
@@ -171,6 +174,9 @@ proc computeBlack0(i: int) =
       else: false
     elif captured == 1: p.lookup
     else: false
+  ♚Check[i] =
+    if illegal or captured > 1: false
+    else: p.inCheck
 
 echo "Computing black at ply=0"
 bz50[0] = newSeq[bool](pis.size)
@@ -204,6 +210,9 @@ proc computeWhite0(i: int, debug = false) =
     elif captured == 0: p.kingCapture
     elif captured == 1: p.lookup
     else: true
+  ♔Check[i] =
+    if illegal or captured > 1: false
+    else: p.inCheck
 
 echo "Computing white at ply=0"
 wz50[0] = newSeq[bool](pis.size)
@@ -231,6 +240,7 @@ proc compute(ply, i: int, debug=false) =
     echo pis.pis2str
     echo p.pos2term
   if not illegal:
+    if ♔Check[i] != p.kingCapture: echo "Check error at ", p.pos2term
     illegal = p.kingCapture
   bz50[ply][i] =
     # loss if one and all legal move lead to loss
