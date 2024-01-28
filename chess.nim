@@ -1,4 +1,4 @@
-# Copyright 2022-2023 Urban Koistinen - GNU Affero
+# Copyright 2022-2024 Urban Koistinen - GNU Affero
 import strutils
 import std/unicode except split
 import std/bitops
@@ -274,6 +274,7 @@ proc genMoves(p: Pos): seq[Move] =
           for s2 in -1..1:
             if 0 != (s1 or s2):
               result.genMove(p, fr, file+s1, rank+s2)
+        # Check later for check or moving through a checked square
         if 0 != (p.castling and (1 shl (2*p.side))) and
            □ == p.bd[fr+1] and
            □ == p.bd[fr+2]: result.add(move(fr,fr+2,14))
@@ -390,6 +391,18 @@ proc inCheck*(p: Pos): bool =
 proc genLegalMoves*(p: Pos): seq[Move] =
   for mv in p.genMoves:
     var p1 = p
+    if mv.flags == 14: # O-O
+      if p.inCheck: continue # Illegal to castle when in check
+      p1.addPiece(p1.bd[mv.fr], mv.fr+1)
+      p1.removePiece(mv.fr)
+      if p1.inCheck: continue # Illegal to pass through check
+      p1 = p
+    if mv.flags == 15: # O-O-O
+      if p.inCheck: continue # Illegal to castle when in check
+      p1.addPiece(p1.bd[mv.fr], mv.fr-1)
+      p1.removePiece(mv.fr)
+      if p1.inCheck: continue # Illegal to pass through check
+      p1 = p
     p1.makeMove(mv)
     if not p1.kingCapture:
       result.add(mv)
