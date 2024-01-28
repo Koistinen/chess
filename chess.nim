@@ -1,7 +1,7 @@
 # Copyright 2022-2023 Urban Koistinen - GNU Affero
 import strutils
 import std/unicode except split
-#import std/bitops
+import std/bitops
 
 proc square*(file, rank: int): int = file+8*rank
 proc file2ch(file: int): char = "abcdefgh"[file]
@@ -24,10 +24,14 @@ const black* = 1
 type Square* = 0..63
 type Pos* = object
   bd*: array[Square, Piece]
+  ♔♕♖♗♘♙, ♚♛♜♝♞♟, ♙♟, ♘♞, ♗♝, ♖♜, ♕♛: int64
+  ♔sq: int
+  ♚sq: int
   g50: int
   side*: int
   ep: int
   castling: int
+
 proc newPos*(side=white): Pos = result.side = side
 
 proc startingPos*: Pos =
@@ -41,6 +45,29 @@ proc startingPos*: Pos =
     ♟,♟,♟,♟,♟,♟,♟,♟,
     ♜,♞,♝,♛,♚,♝,♞,♜]
   result.castling = 0xf
+  for sq in 0..63:
+    let piece = result.bd[sq]
+    if piece.isWhite:
+      result.♔♕♖♗♘♙.setBit sq
+    if piece.isBlack:
+      result.♚♛♜♝♞♟.setBit sq
+    case result.bd[sq]:
+      of ♙, ♟:
+        result.♙♟.setBit sq
+      of ♘, ♞:
+        result.♘♞.setBit sq
+      of ♗, ♝:
+        result.♗♝.setBit sq
+      of ♖, ♜:
+        result.♖♜.setBit sq
+      of ♕, ♛:
+        result.♕♛.setBit sq
+      of ♔:
+        result.♔sq = sq
+      of ♚:
+        result.♚sq = sq
+      of □:
+        discard
   
 proc xside(p: Pos): int = 1 - p.side
   
@@ -88,11 +115,42 @@ proc `$`*(p: Pos): string =
   result.add(" castling: ")
   result.add(p.castlingString)
 
-proc addPiece*(p: var Pos, piece: char, sq: int) =
-  p.bd[sq] = (fenPc.find(piece)-6).Piece
-
 proc addPiece*(p: var Pos, piece: Piece, sq: int) =
   p.bd[sq] = piece
+  if piece.isWhite:
+    p.♔♕♖♗♘♙.setBit sq
+  if piece.isBlack:
+    p.♚♛♜♝♞♟.setBit sq
+  case p.bd[sq]:
+    of ♙, ♟:
+      p.♙♟.setBit sq
+    of ♘, ♞:
+      p.♘♞.setBit sq
+    of ♗, ♝:
+      p.♗♝.setBit sq
+    of ♖, ♜:
+      p.♖♜.setBit sq
+    of ♕, ♛:
+      p.♕♛.setBit sq
+    of ♔:
+      p.♔sq = sq
+    of ♚:
+      p.♚sq = sq
+    of □:
+      discard
+
+proc addPiece*(p: var Pos, piece: char, sq: int) =
+  p.addPiece((fenPc.find(piece)-6).Piece, sq)
+
+proc removePiece(p: var Pos, sq:int) =
+  p.bd[sq] = □
+  p.♔♕♖♗♘♙.clearBit sq
+  p.♚♛♜♝♞♟.clearBit sq
+  p.♙♟.clearBit sq
+  p.♘♞.clearBit sq
+  p.♗♝.clearBit sq
+  p.♖♜.clearBit sq
+  p.♕♛.clearBit sq
 
 proc p2fen*(p: Pos): string =
   for rank in countdown(7,0):
@@ -287,12 +345,12 @@ proc makeMove*(p: var Pos, mv: Move) =
     if 0 == (8 and (mv.fr xor mv.to)):
       p.ep = (mv.fr+mv.to) shr 1
     elif 1 == mv.flags:
-      p.bd[square(mv.to.sq2file, mv.fr.sq2rank)] = □
+      p.removePiece square(mv.to.sq2file, mv.fr.sq2rank)
   elif p.bd[mv.to] != □:
     p.g50 = 0
   else: p.g50.inc
-  p.bd[mv.to] = p.bd[mv.fr]
-  p.bd[mv.fr] = □
+  p.addPiece(p.bd[mv.fr], mv.to)
+  p.removePiece mv.fr
   if mv.fr == square(4,0) or mv.to == square(4,0):
     p.castling = p.castling and not 3
   if mv.fr == square(7,0) or mv.to == square(7,0):
@@ -308,21 +366,21 @@ proc makeMove*(p: var Pos, mv: Move) =
   if mv.flags in 2..5:
     p.bd[mv.to] = (mv.flags*(2*p.side-1)).Piece
   if 6 == mv.flags:
-    p.bd[mv.to-1] = p.bd[mv.to+1]
-    p.bd[mv.to+1] = □
+    p.addPiece(p.bd[mv.to+1], mv.to-1)
+    p.removePiece mv.to+1
   if 7 == mv.flags:
-    p.bd[mv.to+1] = p.bd[mv.to-2]
-    p.bd[mv.to-2] = □
+    p.addPiece(p.bd[mv.to-2], mv.to+1)
+    p.removePiece mv.to-2
   p.side = p.xside
 
 proc kingCapture*(p: Pos): bool =
-  let sq = p.bd.find([♚, ♔][p.side])
+  let sq = [p.♚sq, p.♔sq][p.side]
   for mv in p.genMoves:
     if mv.to == sq: return true
   return false
     
 proc inCheck*(p: Pos): bool =
-  let sq = p.bd.find([♚, ♔][p.xside])
+  let sq = [p.♚sq, p.♔sq][p.xside]
   var p2 = p
   p2.side = p2.xside
   for mv in p2.genMoves:
